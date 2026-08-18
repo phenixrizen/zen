@@ -56,7 +56,7 @@ impl DecisionGraph {
             .content
             .params
             .as_ref()
-            .map(|value| Variable::from(value.as_ref().clone()));
+            .map(|value| Variable::from(value.as_ref()));
 
         Ok(Self {
             initial_graph: graph.clone(),

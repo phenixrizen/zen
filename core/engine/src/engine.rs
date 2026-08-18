@@ -335,6 +335,7 @@ impl DecisionEngine {
             .with_loader(self.loader.clone())
             .with_adapter(self.adapter.clone())
             .with_http_handler(self.http_handler.clone())
+            .with_database_handler(self.database_handler.clone())
     }
 
     /// Creates a decision from DecisionContent, exists for easier binding creation

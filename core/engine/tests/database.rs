@@ -12,7 +12,7 @@ use zen_engine::model::DecisionContent;
 use zen_engine::nodes::database::{
     DatabaseHandler, DatabaseRequest, DatabaseResponse, DatabaseValue, ResolvedQuery,
 };
-use zen_engine::{Decision, Variable};
+use zen_engine::{Decision, DecisionEngine, Variable};
 
 /// Captures the request the engine produced and replays a canned response.
 #[derive(Debug, Default)]
@@ -691,4 +691,37 @@ async fn blob_values_are_rejected() {
 
     let result = run(handler, select_node(json!([]), "rows"), json!({})).await;
     assert!(result.is_err(), "blobs must not silently become null");
+}
+
+// ---------------------------------------------------------------- engine wiring
+
+/// Regression: the handler must survive the DecisionEngine -> Decision hop.
+///
+/// Every loader-driven path (evaluate, evaluate_serialized, create_decision, get_decision) goes
+/// through `decision_from_graph`, so a handler that is stored on the engine but not forwarded
+/// there leaves the whole extension point unreachable while Decision-level tests still pass.
+#[tokio::test]
+#[cfg_attr(miri, ignore)]
+async fn engine_forwards_the_handler_to_decisions() {
+    let handler =
+        RecordingHandler::with_rows(&["CODE"], vec![vec![DatabaseValue::Text("11000".into())]]);
+    let content = Arc::new(graph(select_node(json!([]), "exists")));
+
+    let engine = DecisionEngine::default().with_database_handler(Some(handler.clone()));
+    let decision = engine
+        .create_decision(content)
+        .expect("graph content should produce a decision");
+
+    let output = decision
+        .evaluate(json!({}).into())
+        .await
+        .expect("engine-created decision must reach the handler")
+        .result;
+
+    assert_eq!(output, json!({ "lookup": true }).into());
+    assert_eq!(
+        handler.taken().len(),
+        1,
+        "handler should have been called once"
+    );
 }

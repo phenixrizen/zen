@@ -345,9 +345,11 @@ fn resolve_relation(
         });
     }
 
+    // Column expressions are scoped to the row element, but must still see the reserved
+    // handles and reuse the graph's compiled bytecode, like every other expression in the node.
+    let mut element_isolate = ctx.isolate();
     let mut resolved_rows = Vec::new();
     for element in rows.borrow().iter() {
-        let mut element_isolate = zen_expression::Isolate::new();
         element_isolate.set_environment(element.shallow_clone());
 
         let mut values = Vec::with_capacity(relation.columns.len());
