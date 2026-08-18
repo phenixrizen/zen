@@ -4,6 +4,7 @@ use crate::error::ContentKindError;
 use crate::loader::{ClosureLoader, DynamicLoader, LoaderResponse, LoaderResult, NoopLoader};
 use crate::model::{DecisionContent, GraphContent};
 use crate::nodes::custom::{DynamicCustomNode, NoopCustomNode};
+use crate::nodes::database::handler::DynamicDatabaseHandler;
 use crate::nodes::function::http_handler::DynamicHttpHandler;
 use crate::policy::runtime::{CompiledEntry, CompiledSet};
 use crate::{CompileFailure, EvaluationError};
@@ -21,6 +22,7 @@ pub struct DecisionEngine {
     loader: DynamicLoader,
     adapter: DynamicCustomNode,
     http_handler: DynamicHttpHandler,
+    database_handler: DynamicDatabaseHandler,
     compiled: Arc<ArcSwapOption<CompiledSet>>,
 }
 
@@ -99,6 +101,7 @@ impl Default for DecisionEngine {
             loader: Arc::new(NoopLoader::default()),
             adapter: Arc::new(NoopCustomNode::default()),
             http_handler: None,
+            database_handler: None,
             compiled: Arc::new(ArcSwapOption::empty()),
         }
     }
@@ -110,6 +113,7 @@ impl DecisionEngine {
             loader,
             adapter,
             http_handler: None,
+            database_handler: None,
             compiled: Arc::new(ArcSwapOption::empty()),
         }
     }
@@ -128,6 +132,12 @@ impl DecisionEngine {
 
     pub fn with_http_handler(mut self, http_handler: DynamicHttpHandler) -> Self {
         self.http_handler = http_handler;
+        self.compiled = Arc::new(ArcSwapOption::empty());
+        self
+    }
+
+    pub fn with_database_handler(mut self, database_handler: DynamicDatabaseHandler) -> Self {
+        self.database_handler = database_handler;
         self.compiled = Arc::new(ArcSwapOption::empty());
         self
     }

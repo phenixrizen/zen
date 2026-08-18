@@ -53,6 +53,7 @@ impl NodePaths {
             DecisionNodeKind::ExpressionNode { content } => Some(&content.transform_attributes),
             DecisionNodeKind::DecisionTableNode { content } => Some(&content.transform_attributes),
             DecisionNodeKind::DecisionNode { content } => Some(&content.transform_attributes),
+            DecisionNodeKind::DatabaseNode { content } => Some(&content.transform_attributes),
             _ => None,
         }
     }

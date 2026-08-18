@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use serde_json::Value;
-use zen_types::decision::{DecisionNodeKind, FunctionNodeContent};
+use zen_types::decision::{DatabaseQuery, DatabaseSource, DecisionNodeKind, FunctionNodeContent};
 
 use crate::model::DecisionContent;
 use crate::policy::raw::BlockDoc;
@@ -483,6 +483,77 @@ fn search_graph_node(collector: &mut Collector, node: &zen_types::decision::Deci
                 FunctionNodeContent::Version1(source) => source,
             };
             collector.add(SearchHitKind::Function, source, in_node(HitSite::default()));
+        }
+        DecisionNodeKind::DatabaseNode { content } => {
+            if let DatabaseSource::Name(name) = &content.source {
+                collector.add(
+                    SearchHitKind::ExpressionKey,
+                    name,
+                    in_node(HitSite::default()),
+                );
+            }
+
+            for relation in content.relations.iter() {
+                collector.add(
+                    SearchHitKind::ExpressionKey,
+                    &relation.name,
+                    in_node(HitSite::default()),
+                );
+            }
+
+            match &content.query {
+                DatabaseQuery::Select(select) => {
+                    collector.add(
+                        SearchHitKind::ExpressionKey,
+                        &select.table,
+                        in_node(HitSite::default()),
+                    );
+                    for column in select.columns.iter() {
+                        collector.add(
+                            SearchHitKind::ExpressionKey,
+                            column,
+                            in_node(HitSite::default()),
+                        );
+                    }
+                    for condition in select.conditions.iter() {
+                        collector.add(
+                            SearchHitKind::ExpressionKey,
+                            &condition.column,
+                            in_node(HitSite {
+                                expression_id: Some(condition.id.clone()),
+                                ..HitSite::default()
+                            }),
+                        );
+                        if let Some(value) = &condition.value {
+                            collector.add(
+                                SearchHitKind::Expression,
+                                value,
+                                in_node(HitSite {
+                                    expression_id: Some(condition.id.clone()),
+                                    ..HitSite::default()
+                                }),
+                            );
+                        }
+                    }
+                }
+                DatabaseQuery::Raw(raw) => {
+                    collector.add(
+                        SearchHitKind::Expression,
+                        &raw.sql,
+                        in_node(HitSite::default()),
+                    );
+                    for parameter in raw.parameters.iter() {
+                        collector.add(
+                            SearchHitKind::Expression,
+                            &parameter.value,
+                            in_node(HitSite {
+                                expression_id: Some(parameter.id.clone()),
+                                ..HitSite::default()
+                            }),
+                        );
+                    }
+                }
+            }
         }
         _ => {}
     }

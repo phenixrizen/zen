@@ -364,6 +364,7 @@ pub struct NodeContextConfig {
     pub function_timeout_millis: u64,
     pub http_auth: bool,
     pub validation_salt: u64,
+    pub database_max_rows: u32,
 }
 
 impl Default for NodeContextConfig {
@@ -375,6 +376,7 @@ impl Default for NodeContextConfig {
             http_auth: ZEN_CONFIG.http_auth.load(Ordering::Relaxed),
             max_depth: 5,
             validation_salt: 0,
+            database_max_rows: ZEN_CONFIG.database_max_rows.load(Ordering::Relaxed) as u32,
         }
     }
 }

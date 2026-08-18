@@ -3,6 +3,10 @@ use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::Value;
 use std::sync::Arc;
 
+mod database;
+
+pub use database::*;
+
 /// JDM Decision model
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -65,6 +69,9 @@ pub enum DecisionNodeKind {
     },
     CustomNode {
         content: CustomNodeContent,
+    },
+    DatabaseNode {
+        content: DatabaseNodeContent,
     },
 }
 

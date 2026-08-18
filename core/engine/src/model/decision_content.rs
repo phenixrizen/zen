@@ -8,7 +8,10 @@ use ahash::{HashMap, HashMapExt};
 use serde::{Deserialize, Deserializer, Serialize};
 use std::sync::Arc;
 use zen_expression::{ExpressionKind, Isolate, OpcodeCache};
-use zen_types::decision::{DecisionEdge, DecisionNode, DecisionNodeKind, FunctionNodeContent};
+use zen_types::decision::{
+    DatabaseQuery, DatabaseSource, DecisionEdge, DecisionNode, DecisionNodeKind,
+    FunctionNodeContent,
+};
 
 #[derive(Clone, Debug, Serialize)]
 #[serde(untagged)]
@@ -167,6 +170,33 @@ impl GraphContent {
                             };
 
                             sources.push((rule_value.clone(), ExpressionKind::Standard));
+                        }
+                    }
+                }
+                DecisionNodeKind::DatabaseNode { content } => {
+                    if let DatabaseSource::Expression { expression } = &content.source {
+                        sources.push((expression.clone(), ExpressionKind::Standard));
+                    }
+
+                    for relation in content.relations.iter() {
+                        sources.push((relation.rows.clone(), ExpressionKind::Standard));
+                        for column in relation.columns.iter() {
+                            sources.push((column.value.clone(), ExpressionKind::Standard));
+                        }
+                    }
+
+                    match &content.query {
+                        DatabaseQuery::Select(select) => {
+                            for condition in select.conditions.iter() {
+                                if let Some(value) = &condition.value {
+                                    sources.push((value.clone(), ExpressionKind::Standard));
+                                }
+                            }
+                        }
+                        DatabaseQuery::Raw(raw) => {
+                            for parameter in raw.parameters.iter() {
+                                sources.push((parameter.value.clone(), ExpressionKind::Standard));
+                            }
                         }
                     }
                 }

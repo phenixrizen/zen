@@ -1,5 +1,6 @@
 mod context;
 pub mod custom;
+pub mod database;
 pub mod decision;
 pub mod decision_table;
 mod definition;
@@ -14,6 +15,7 @@ pub(crate) mod validator_cache;
 pub mod variable_json;
 
 pub use context::{NodeContext, NodeContextBase, NodeContextConfig, NodeContextExt};
+pub use database::handler as database_handler;
 pub use definition::NodeHandler;
 pub(crate) use definition::{NodeDataType, TraceDataType};
 pub use extensions::NodeHandlerExtensions;
