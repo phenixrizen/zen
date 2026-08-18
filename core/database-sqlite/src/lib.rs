@@ -59,7 +59,8 @@ impl SqliteDatabaseHandler {
     }
 
     async fn run(&self, request: DatabaseRequest) -> Result<DatabaseResponse, SqliteError> {
-        let conn = self.sources.connect(&request.source).await?;
+        let lease = self.sources.lease(&request.source).await?;
+        let conn = lease.conn();
 
         let mut params: Vec<DatabaseValue> = Vec::new();
         let (prefix, relation_names) =
