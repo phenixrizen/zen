@@ -1,0 +1,33 @@
+{
+  "params": { "enabled": true, "threshold": 10, "label": "from-params" },
+  "tests": [
+    { "input": { "amount": 25 },
+      "output": { "viaSwitch": "yes", "viaExpression": "from-params", "viaFunction": 10 } }
+  ],
+  "nodes": [
+    { "id": "input", "name": "Request", "type": "inputNode", "content": { "schema": "" } },
+    { "id": "sw", "name": "params in switch", "type": "switchNode",
+      "content": { "hitPolicy": "first", "statements": [
+        { "id": "s_y", "condition": "$params.enabled and amount > $params.threshold", "isDefault": false },
+        { "id": "s_n", "condition": "", "isDefault": true } ] } },
+    { "id": "ex", "name": "params in expression", "type": "expressionNode",
+      "content": { "expressions": [
+        { "id": "e1", "key": "viaSwitch", "value": "'yes'" },
+        { "id": "e2", "key": "viaExpression", "value": "$params.label" } ],
+        "passThrough": false, "inputField": null, "outputPath": null, "executionMode": "single" } },
+    { "id": "fn", "name": "params in function v2", "type": "functionNode",
+      "content": { "source": "export const handler = async (input) => ({ ...input, viaFunction: input.$params.threshold });" } },
+    { "id": "leaf_n", "name": "not applicable", "type": "expressionNode",
+      "content": { "expressions": [ { "id": "n1", "key": "viaSwitch", "value": "'no'" } ],
+        "passThrough": false, "inputField": null, "outputPath": null, "executionMode": "single" } },
+    { "id": "output", "name": "Response", "type": "outputNode" }
+  ],
+  "edges": [
+    { "id": "e1", "sourceId": "input", "targetId": "sw", "type": "edge" },
+    { "id": "e2", "sourceId": "sw", "targetId": "ex", "sourceHandle": "s_y", "type": "edge" },
+    { "id": "e3", "sourceId": "sw", "targetId": "leaf_n", "sourceHandle": "s_n", "type": "edge" },
+    { "id": "e4", "sourceId": "ex", "targetId": "fn", "type": "edge" },
+    { "id": "e5", "sourceId": "fn", "targetId": "output", "type": "edge" },
+    { "id": "e6", "sourceId": "leaf_n", "targetId": "output", "type": "edge" }
+  ]
+}

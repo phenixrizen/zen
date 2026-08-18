@@ -598,3 +598,97 @@ async fn params_do_not_leak_into_output() {
         "$params must be stripped from the result"
     );
 }
+
+/// Regression: a non-integral value must be rejected under an `integer` hint rather than
+/// truncated. `Decimal::to_i64` rounds toward zero, so an unguarded conversion would silently
+/// bind 42.9 as 42.
+#[tokio::test]
+#[cfg_attr(miri, ignore)]
+async fn integer_hint_rejects_non_integral_values() {
+    let handler = RecordingHandler::empty();
+    let node = select_node(
+        json!([{ "id": "c1", "column": "units", "operator": "eq", "value": "n", "as": "integer" }]),
+        "rows",
+    );
+
+    let result = run(handler.clone(), node, json!({ "n": 42.9 })).await;
+
+    assert!(result.is_err(), "42.9 must not be silently truncated to 42");
+    assert!(
+        handler.taken().is_empty(),
+        "handler must not be called with a corrupted value"
+    );
+}
+
+#[tokio::test]
+#[cfg_attr(miri, ignore)]
+async fn integer_hint_accepts_integral_decimals() {
+    let handler = RecordingHandler::empty();
+    let node = select_node(
+        json!([{ "id": "c1", "column": "units", "operator": "eq", "value": "n", "as": "integer" }]),
+        "rows",
+    );
+
+    run(handler.clone(), node, json!({ "n": 42.0 }))
+        .await
+        .expect("42.0 is integral and should bind");
+
+    assert_eq!(
+        handler.select().conditions[0].values,
+        vec![DatabaseValue::Integer(42)]
+    );
+}
+
+// ---------------------------------------------------------------- handler contract
+
+/// The row ceiling is advertised as engine-enforced, so it must hold even when a handler
+/// ignores it.
+#[tokio::test]
+#[cfg_attr(miri, ignore)]
+async fn oversized_handler_response_is_truncated_by_the_engine() {
+    zen_engine::ZEN_CONFIG
+        .database_max_rows
+        .store(3, std::sync::atomic::Ordering::Relaxed);
+
+    let rows: Vec<Vec<DatabaseValue>> = (0..10).map(|i| vec![DatabaseValue::Integer(i)]).collect();
+    let handler = RecordingHandler::with_rows(&["n"], rows);
+
+    let output = run(handler, select_node(json!([]), "rows"), json!({}))
+        .await
+        .expect("evaluation should succeed");
+
+    assert_eq!(
+        output,
+        json!({ "lookup": [{ "n": 0 }, { "n": 1 }, { "n": 2 }] }).into(),
+        "engine must cap rows at database_max_rows"
+    );
+
+    zen_engine::ZEN_CONFIG
+        .database_max_rows
+        .store(10_000, std::sync::atomic::Ordering::Relaxed);
+}
+
+/// A malformed response must fail loudly rather than silently dropping or inventing columns.
+#[tokio::test]
+#[cfg_attr(miri, ignore)]
+async fn mismatched_row_width_is_rejected() {
+    let handler = RecordingHandler::with_rows(
+        &["a", "b"],
+        vec![vec![DatabaseValue::Integer(1)]], // one value, two columns
+    );
+
+    let result = run(handler, select_node(json!([]), "rows"), json!({})).await;
+    assert!(result.is_err(), "short rows must not be silently padded");
+}
+
+/// Blobs have no faithful decision-value representation, so they must error rather than
+/// silently becoming null.
+#[tokio::test]
+#[cfg_attr(miri, ignore)]
+async fn blob_values_are_rejected() {
+    let handler =
+        RecordingHandler::with_rows(&["data"], vec![vec![DatabaseValue::Blob(vec![1, 2])]]);
+
+    let result = run(handler, select_node(json!([]), "rows"), json!({})).await;
+    assert!(result.is_err(), "blobs must not silently become null");
+}

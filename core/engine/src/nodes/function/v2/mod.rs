@@ -66,7 +66,10 @@ impl NodeHandler for FunctionV2NodeHandler {
             .await?;
 
         let response_result = function
-            .call_handler(&module_name, JsValueWithNodes(JsValue(ctx.input.clone())))
+            .call_handler(
+                &module_name,
+                JsValueWithNodes(JsValue(ctx.input.clone()), ctx.params.clone()),
+            )
             .await;
 
         function.runtime().set_interrupt_handler(None).await;

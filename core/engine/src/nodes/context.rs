@@ -399,7 +399,11 @@ impl Default for NodeContextConfig {
             http_auth: ZEN_CONFIG.http_auth.load(Ordering::Relaxed),
             max_depth: 5,
             validation_salt: 0,
-            database_max_rows: ZEN_CONFIG.database_max_rows.load(Ordering::Relaxed) as u32,
+            database_max_rows: ZEN_CONFIG
+                .database_max_rows
+                .load(Ordering::Relaxed)
+                .try_into()
+                .unwrap_or(u32::MAX),
         }
     }
 }

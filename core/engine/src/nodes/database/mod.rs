@@ -78,8 +78,12 @@ fn coerce(value: Variable, hint: Option<DatabaseValueType>) -> Result<Val, Strin
             _ => return Err(format!("expected boolean, got {}", type_name(&value))),
         },
         (_, Some(DatabaseValueType::Integer)) => match &value {
+            // to_i64 truncates, so a non-integral value must be rejected rather than silently
+            // rounded - binding 42.9 as 42 would be data corruption, not coercion.
             Variable::Number(n) => n
-                .to_i64()
+                .is_integer()
+                .then(|| n.to_i64())
+                .flatten()
                 .map(Val::Integer)
                 .ok_or_else(|| format!("value {n} is not representable as an integer"))?,
             Variable::String(s) => s
@@ -142,8 +146,14 @@ fn value_to_variable(value: &Val) -> Variable {
         Val::Integer(i) => Variable::Number(Decimal::from(*i)),
         Val::Decimal(d) => Variable::Number(*d),
         Val::Text(s) => Variable::String(Symbol::from(s.as_str())),
+        // Blobs have no faithful Variable representation. Erasing them silently would be data
+        // loss, so the node rejects them and leaves any encoding decision to the graph author.
         Val::Blob(_) => Variable::Null,
     }
+}
+
+fn row_has_blob(row: &[Val]) -> bool {
+    row.iter().any(|value| matches!(value, Val::Blob(_)))
 }
 
 impl NodeHandler for DatabaseNodeHandler {
@@ -213,21 +223,63 @@ impl NodeHandler for DatabaseNodeHandler {
                 .unwrap_or(Variable::Null);
         });
 
-        let response = handler
+        let mut response = handler
             .query(request)
             .await
             .map_err(|err| ctx.make_error(err))?;
+
+        // max_rows is advertised as engine-enforced, so enforce it here rather than trusting the
+        // handler to have honoured it.
+        let limit = max_rows as usize;
+        if response.rows.len() > limit {
+            response.rows.truncate(limit);
+            response.truncated = true;
+        }
 
         ctx.trace(|trace| {
             trace.row_count = Variable::Number(Decimal::from(response.rows.len()));
             trace.truncated = Variable::Bool(response.truncated);
         });
 
-        ctx.success(shape_result(&ctx.node.result, response))
+        let output = shape_result(&ctx.node.result, response).node_context(&ctx)?;
+        ctx.success(output)
     }
 }
 
-fn shape_result(shape: &DatabaseResultShape, response: DatabaseResponse) -> Variable {
+fn shape_result(
+    shape: &DatabaseResultShape,
+    response: DatabaseResponse,
+) -> Result<Variable, String> {
+    // Shapes that only look at row counts need no cell inspection.
+    match shape {
+        DatabaseResultShape::Exists => return Ok(Variable::Bool(!response.rows.is_empty())),
+        DatabaseResultShape::Count => {
+            if response.truncated {
+                return Err(
+                    "row count is unreliable: the result was truncated at the configured maximum"
+                        .to_string(),
+                );
+            }
+            return Ok(Variable::Number(Decimal::from(response.rows.len())));
+        }
+        _ => {}
+    }
+
+    let width = response.columns.len();
+    for (index, row) in response.rows.iter().enumerate() {
+        if row.len() != width {
+            return Err(format!(
+                "row {index} has {} values but {width} columns were declared",
+                row.len()
+            ));
+        }
+        if row_has_blob(row) {
+            return Err(format!(
+                "row {index} contains a blob, which has no representation in a decision value"
+            ));
+        }
+    }
+
     let row_to_object = |row: &Vec<Val>| {
         let object = Variable::empty_object();
         for (column, value) in response.columns.iter().zip(row.iter()) {
@@ -236,7 +288,7 @@ fn shape_result(shape: &DatabaseResultShape, response: DatabaseResponse) -> Vari
         object
     };
 
-    match shape {
+    let output = match shape {
         DatabaseResultShape::Rows => Variable::from_array(
             response
                 .rows
@@ -251,9 +303,11 @@ fn shape_result(shape: &DatabaseResultShape, response: DatabaseResponse) -> Vari
             .and_then(|row| row.first())
             .map(value_to_variable)
             .unwrap_or_default(),
-        DatabaseResultShape::Exists => Variable::Bool(!response.rows.is_empty()),
-        DatabaseResultShape::Count => Variable::Number(Decimal::from(response.rows.len())),
-    }
+        // Handled above.
+        DatabaseResultShape::Exists | DatabaseResultShape::Count => Variable::Null,
+    };
+
+    Ok(output)
 }
 
 fn resolve_relation(
