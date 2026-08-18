@@ -1,0 +1,22 @@
+[package]
+name = "zen-database-sqlite"
+description = "Pure-Rust SQLite database handler for the ZEN engine"
+license = "MIT"
+version = "1.0.0-beta.12"
+edition = "2021"
+publish = false
+
+[dependencies]
+zen-engine = { path = "../engine", version = "1.0.0-beta.12" }
+zen-types = { path = "../types", version = "1.0.0-beta.12" }
+ahash = { workspace = true }
+rust_decimal = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true, features = ["sync"] }
+# Pure-Rust SQLite: no C toolchain, no vendored amalgamation, wasm-capable.
+turso = "0.7"
+
+[dev-dependencies]
+serde_json = { workspace = true }
+tempfile = "3"
+tokio = { workspace = true, features = ["rt", "rt-multi-thread", "macros"] }
