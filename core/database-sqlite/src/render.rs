@@ -6,7 +6,9 @@
 //! can serve a different SQLite backend later.
 
 use ahash::HashSet;
-use zen_engine::nodes::database::{DatabaseValue, ResolvedRaw, ResolvedRelation, ResolvedSelect};
+use zen_engine::nodes::database::{
+    DatabaseValue, ResolvedPredicate, ResolvedRaw, ResolvedRelation, ResolvedSelect,
+};
 use zen_types::decision::{DatabaseOperator, JoinKind, OrderDirection};
 
 use crate::error::SqliteError;
@@ -185,16 +187,13 @@ pub(crate) fn render_select(
 
     if !select.conditions.is_empty() {
         let mut predicates = Vec::with_capacity(select.conditions.len());
-        for condition in &select.conditions {
-            let column = quote_column(&condition.column, relations)?;
-            let predicate = render_condition(
-                &column,
-                condition.operator,
-                &condition.values,
+        for predicate in &select.conditions {
+            predicates.push(render_predicate(
+                predicate,
+                relations,
                 &mut params,
                 variable_limit,
-            )?;
-            predicates.push(predicate);
+            )?);
         }
         sql.push_str(" WHERE ");
         sql.push_str(&predicates.join(" AND "));
@@ -225,6 +224,55 @@ pub(crate) fn render_select(
     }
 
     Ok(Rendered { sql, params })
+}
+
+/// Renders a predicate tree. Groups are always parenthesized, so mixing AND and OR cannot
+/// change meaning through operator precedence.
+fn render_predicate(
+    predicate: &ResolvedPredicate,
+    relations: &HashSet<String>,
+    params: &mut Vec<DatabaseValue>,
+    variable_limit: usize,
+) -> Result<String, SqliteError> {
+    let rendered = match predicate {
+        ResolvedPredicate::Condition(condition) => {
+            let column = quote_column(&condition.column, relations)?;
+            render_condition(
+                &column,
+                condition.operator,
+                &condition.values,
+                params,
+                variable_limit,
+            )?
+        }
+        ResolvedPredicate::All { all } => {
+            render_group(all, "AND", relations, params, variable_limit)?
+        }
+        ResolvedPredicate::Any { any } => {
+            render_group(any, "OR", relations, params, variable_limit)?
+        }
+    };
+
+    Ok(rendered)
+}
+
+fn render_group(
+    members: &[ResolvedPredicate],
+    joiner: &str,
+    relations: &HashSet<String>,
+    params: &mut Vec<DatabaseValue>,
+    variable_limit: usize,
+) -> Result<String, SqliteError> {
+    if members.is_empty() {
+        return Err(SqliteError::query("predicate group is empty"));
+    }
+
+    let parts = members
+        .iter()
+        .map(|m| render_predicate(m, relations, params, variable_limit))
+        .collect::<Result<Vec<_>, _>>()?;
+
+    Ok(format!("({})", parts.join(&format!(" {joiner} "))))
 }
 
 fn render_condition(

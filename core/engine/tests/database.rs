@@ -150,7 +150,7 @@ async fn binds_scalar_condition_from_input() {
     assert_eq!(select.table, "fees_short");
     assert_eq!(select.conditions.len(), 1);
     assert_eq!(
-        select.conditions[0].values,
+        select.conditions[0].conditions()[0].values,
         vec![DatabaseValue::Text("11000".into())]
     );
 }
@@ -174,7 +174,7 @@ async fn expands_in_list_into_individual_bound_values() {
 
     // Each element is bound separately; nothing is interpolated into statement text.
     assert_eq!(
-        handler.select().conditions[0].values,
+        handler.select().conditions[0].conditions()[0].values,
         vec![
             DatabaseValue::Text("1".into()),
             DatabaseValue::Text("2".into()),
@@ -196,7 +196,9 @@ async fn empty_in_list_binds_no_values() {
         .await
         .expect("evaluation should succeed");
 
-    assert!(handler.select().conditions[0].values.is_empty());
+    assert!(handler.select().conditions[0].conditions()[0]
+        .values
+        .is_empty());
 }
 
 #[tokio::test]
@@ -216,7 +218,12 @@ async fn coerces_values_by_declared_type() {
         .await
         .expect("evaluation should succeed");
 
-    let conditions = handler.select().conditions;
+    let select = handler.select();
+    let conditions: Vec<_> = select
+        .conditions
+        .iter()
+        .flat_map(|p| p.conditions())
+        .collect();
     assert_eq!(conditions[0].values, vec![DatabaseValue::Integer(42)]);
     assert_eq!(conditions[1].values, vec![DatabaseValue::Text("42".into())]);
     assert_eq!(conditions[2].values, vec![DatabaseValue::Boolean(true)]);
@@ -235,7 +242,9 @@ async fn null_check_operators_bind_nothing() {
         .await
         .expect("evaluation should succeed");
 
-    assert!(handler.select().conditions[0].values.is_empty());
+    assert!(handler.select().conditions[0].conditions()[0]
+        .values
+        .is_empty());
 }
 
 // ---------------------------------------------------------------- safety
@@ -537,7 +546,12 @@ async fn params_are_readable_from_conditions() {
     .await
     .expect("evaluation should succeed");
 
-    let conditions = handler.select().conditions;
+    let select = handler.select();
+    let conditions: Vec<_> = select
+        .conditions
+        .iter()
+        .flat_map(|p| p.conditions())
+        .collect();
     assert_eq!(
         conditions[0].values,
         vec![
@@ -634,7 +648,7 @@ async fn integer_hint_accepts_integral_decimals() {
         .expect("42.0 is integral and should bind");
 
     assert_eq!(
-        handler.select().conditions[0].values,
+        handler.select().conditions[0].conditions()[0].values,
         vec![DatabaseValue::Integer(42)]
     );
 }

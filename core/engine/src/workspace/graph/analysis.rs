@@ -661,8 +661,10 @@ impl<'a> GraphAnalyzer<'a> {
 
         match &content.query {
             DatabaseQuery::Select(select) => {
-                for condition in select.conditions.iter() {
-                    self.check_condition(node, condition, &expr_scope);
+                for predicate in select.conditions.iter() {
+                    for condition in predicate.conditions() {
+                        self.check_condition(node, condition, &expr_scope);
+                    }
                 }
                 Self::select_output(&content.result, &select.columns)
             }
@@ -2243,7 +2245,7 @@ impl<'a> GraphAnalyzer<'a> {
                 }
                 match &content.query {
                     DatabaseQuery::Select(select) => {
-                        for condition in select.conditions.iter() {
+                        for condition in select.conditions.iter().flat_map(|p| p.conditions()) {
                             let Some(value) = &condition.value else {
                                 continue;
                             };

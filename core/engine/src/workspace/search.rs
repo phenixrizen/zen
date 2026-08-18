@@ -515,7 +515,7 @@ fn search_graph_node(collector: &mut Collector, node: &zen_types::decision::Deci
                             in_node(HitSite::default()),
                         );
                     }
-                    for condition in select.conditions.iter() {
+                    for condition in select.conditions.iter().flat_map(|p| p.conditions()) {
                         collector.add(
                             SearchHitKind::ExpressionKey,
                             &condition.column,

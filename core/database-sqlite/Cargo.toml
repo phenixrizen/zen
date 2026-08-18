@@ -17,6 +17,7 @@ tokio = { workspace = true, features = ["sync"] }
 turso = "0.7"
 
 [dev-dependencies]
+zen-types = { path = "../types", version = "1.0.0-beta.12" }
 serde_json = { workspace = true }
 tempfile = "3"
 tokio = { workspace = true, features = ["rt", "rt-multi-thread", "macros"] }

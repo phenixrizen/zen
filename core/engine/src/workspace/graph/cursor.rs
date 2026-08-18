@@ -79,6 +79,7 @@ impl Db {
                     DatabaseQuery::Select(select) => select
                         .conditions
                         .iter()
+                        .flat_map(|predicate| predicate.conditions())
                         .find(|condition| condition.id == *id)
                         .and_then(|condition| condition.value.clone())?,
                     DatabaseQuery::Raw(raw) => raw

@@ -2,8 +2,9 @@ use rust_decimal::prelude::ToPrimitive;
 use rust_decimal::Decimal;
 use zen_expression::variable::{ToVariable, Variable};
 use zen_types::decision::{
-    DatabaseCondition, DatabaseNodeContent, DatabaseQuery, DatabaseRelation, DatabaseResultShape,
-    DatabaseSource, DatabaseValueType, RawQuery, SelectQuery, TransformAttributes,
+    DatabaseCondition, DatabaseNodeContent, DatabasePredicate, DatabaseQuery, DatabaseRelation,
+    DatabaseResultShape, DatabaseSource, DatabaseValueType, RawQuery, SelectQuery,
+    TransformAttributes,
 };
 use zen_types::symbol::Symbol;
 
@@ -16,7 +17,8 @@ pub mod handler;
 pub use handler::{
     DatabaseHandler, DatabaseRequest, DatabaseResponse, DatabaseValue, DatabaseValueKind,
     DynamicDatabaseHandler, NoopDatabaseHandler, ResolvedCondition, ResolvedJoin, ResolvedOrder,
-    ResolvedQuery, ResolvedRaw, ResolvedRelation, ResolvedRelationColumn, ResolvedSelect,
+    ResolvedPredicate, ResolvedQuery, ResolvedRaw, ResolvedRelation, ResolvedRelationColumn,
+    ResolvedSelect,
 };
 
 use handler::DatabaseValue as Val;
@@ -401,8 +403,8 @@ fn resolve_select(
     }
 
     let mut conditions = Vec::with_capacity(select.conditions.len());
-    for condition in select.conditions.iter() {
-        conditions.push(resolve_condition(ctx, isolate, condition)?);
+    for predicate in select.conditions.iter() {
+        conditions.push(resolve_predicate(ctx, isolate, predicate)?);
     }
 
     let mut order_by = Vec::with_capacity(select.order_by.len());
@@ -423,6 +425,40 @@ fn resolve_select(
         order_by,
         limit: select.limit,
     })
+}
+
+fn resolve_predicate(
+    ctx: &NodeContext<DatabaseNodeData, DatabaseNodeTrace>,
+    isolate: &mut zen_expression::Isolate,
+    predicate: &DatabasePredicate,
+) -> Result<ResolvedPredicate, crate::nodes::result::NodeError> {
+    let resolved = match predicate {
+        DatabasePredicate::Condition(condition) => {
+            ResolvedPredicate::Condition(resolve_condition(ctx, isolate, condition)?)
+        }
+        DatabasePredicate::All { all } => {
+            if all.is_empty() {
+                return Err(ctx.make_error("an `all` predicate group is empty".to_string()));
+            }
+            let mut nested = Vec::with_capacity(all.len());
+            for inner in all.iter() {
+                nested.push(resolve_predicate(ctx, isolate, inner)?);
+            }
+            ResolvedPredicate::All { all: nested }
+        }
+        DatabasePredicate::Any { any } => {
+            if any.is_empty() {
+                return Err(ctx.make_error("an `any` predicate group is empty".to_string()));
+            }
+            let mut nested = Vec::with_capacity(any.len());
+            for inner in any.iter() {
+                nested.push(resolve_predicate(ctx, isolate, inner)?);
+            }
+            ResolvedPredicate::Any { any: nested }
+        }
+    };
+
+    Ok(resolved)
 }
 
 fn resolve_condition(

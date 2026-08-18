@@ -52,7 +52,7 @@ pub struct SelectQuery {
     #[serde(default)]
     pub joins: Arc<Vec<SelectJoin>>,
     #[serde(default)]
-    pub conditions: Arc<Vec<DatabaseCondition>>,
+    pub conditions: Arc<Vec<DatabasePredicate>>,
     #[serde(default)]
     pub order_by: Arc<Vec<DatabaseOrder>>,
     #[serde(default)]
@@ -82,6 +82,42 @@ pub enum JoinKind {
 pub struct JoinCondition {
     pub left: Arc<str>,
     pub right: Arc<str>,
+}
+
+/// A predicate: either a single comparison, or a group combining several.
+///
+/// A bare array of comparisons is combined with AND, so the common case needs no nesting. Groups
+/// exist for the shapes that AND cannot express - most often an open-ended effective date, where
+/// a missing end is written `end = \'\' OR dos < end`.
+#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
+#[serde(untagged)]
+pub enum DatabasePredicate {
+    /// All nested predicates must hold.
+    All { all: Arc<Vec<DatabasePredicate>> },
+    /// At least one nested predicate must hold.
+    Any { any: Arc<Vec<DatabasePredicate>> },
+    /// A single column comparison.
+    Condition(DatabaseCondition),
+}
+
+impl DatabasePredicate {
+    /// Every leaf comparison in the tree, in declaration order.
+    ///
+    /// Callers that only need the comparisons - expression compilation, static analysis, search
+    /// indexing - use this and stay unaware of the grouping.
+    pub fn conditions(&self) -> Vec<&DatabaseCondition> {
+        let mut out = Vec::new();
+        self.collect(&mut out);
+        out
+    }
+
+    fn collect<'a>(&'a self, out: &mut Vec<&'a DatabaseCondition>) {
+        match self {
+            Self::Condition(condition) => out.push(condition),
+            Self::All { all } => all.iter().for_each(|p| p.collect(out)),
+            Self::Any { any } => any.iter().for_each(|p| p.collect(out)),
+        }
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]

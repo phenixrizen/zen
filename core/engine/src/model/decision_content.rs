@@ -194,9 +194,11 @@ impl GraphContent {
 
                     match &content.query {
                         DatabaseQuery::Select(select) => {
-                            for condition in select.conditions.iter() {
-                                if let Some(value) = &condition.value {
-                                    sources.push((value.clone(), ExpressionKind::Standard));
+                            for predicate in select.conditions.iter() {
+                                for condition in predicate.conditions() {
+                                    if let Some(value) = &condition.value {
+                                        sources.push((value.clone(), ExpressionKind::Standard));
+                                    }
                                 }
                             }
                         }

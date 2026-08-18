@@ -49,7 +49,7 @@ pub struct ResolvedSelect {
     pub columns: Vec<String>,
     pub distinct: bool,
     pub joins: Vec<ResolvedJoin>,
-    pub conditions: Vec<ResolvedCondition>,
+    pub conditions: Vec<ResolvedPredicate>,
     pub order_by: Vec<ResolvedOrder>,
     pub limit: Option<u32>,
 }
@@ -60,6 +60,32 @@ pub struct ResolvedJoin {
     pub table: String,
     pub kind: JoinKind,
     pub on: Vec<(String, String)>,
+}
+
+/// A resolved predicate tree. Top-level entries are combined with AND.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(tag = "type", rename_all = "camelCase")]
+pub enum ResolvedPredicate {
+    Condition(ResolvedCondition),
+    All { all: Vec<ResolvedPredicate> },
+    Any { any: Vec<ResolvedPredicate> },
+}
+
+impl ResolvedPredicate {
+    /// Every leaf comparison in the tree, in declaration order.
+    pub fn conditions(&self) -> Vec<&ResolvedCondition> {
+        let mut out = Vec::new();
+        self.collect(&mut out);
+        out
+    }
+
+    fn collect<'a>(&'a self, out: &mut Vec<&'a ResolvedCondition>) {
+        match self {
+            Self::Condition(condition) => out.push(condition),
+            Self::All { all } => all.iter().for_each(|p| p.collect(out)),
+            Self::Any { any } => any.iter().for_each(|p| p.collect(out)),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
