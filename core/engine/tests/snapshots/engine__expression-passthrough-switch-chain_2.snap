@@ -1,0 +1,149 @@
+---
+source: core/engine/tests/engine.rs
+expression: serialized_result
+---
+performance: "[perf]"
+result:
+  decision: NO_PATIENT_MATCH
+  nOrig:
+    "$serde_json::private::Number": "1"
+  nPat:
+    "$serde_json::private::Number": "0"
+trace:
+  ex_pat:
+    id: ex_pat
+    input:
+      clue:
+        code:
+          "$serde_json::private::Number": "11000"
+      ocls:
+        - code:
+            "$serde_json::private::Number": "11000"
+          sameClaim: true
+          sameDate: true
+          samePatient: true
+          seq:
+            "$serde_json::private::Number": "1"
+    name: narrow to same patient
+    order:
+      "$serde_json::private::Number": "1"
+    output:
+      clue:
+        code:
+          "$serde_json::private::Number": "11000"
+      ocls:
+        - code:
+            "$serde_json::private::Number": "11000"
+          sameClaim: true
+          sameDate: true
+          samePatient: true
+          seq:
+            "$serde_json::private::Number": "1"
+      oclsPat: []
+    performance: "[perf]"
+    traceData:
+      oclsPat:
+        result: []
+  input:
+    id: input
+    input: ~
+    name: Claim
+    order:
+      "$serde_json::private::Number": "0"
+    output:
+      clue:
+        code:
+          "$serde_json::private::Number": "11000"
+      ocls:
+        - code:
+            "$serde_json::private::Number": "11000"
+          sameClaim: true
+          sameDate: true
+          samePatient: true
+          seq:
+            "$serde_json::private::Number": "1"
+    performance: "[perf]"
+    traceData: ~
+  leaf_nopat:
+    id: leaf_nopat
+    input:
+      clue:
+        code:
+          "$serde_json::private::Number": "11000"
+      ocls:
+        - code:
+            "$serde_json::private::Number": "11000"
+          sameClaim: true
+          sameDate: true
+          samePatient: true
+          seq:
+            "$serde_json::private::Number": "1"
+      oclsPat: []
+    name: no patient match
+    order:
+      "$serde_json::private::Number": "3"
+    output:
+      decision: NO_PATIENT_MATCH
+      nOrig:
+        "$serde_json::private::Number": "1"
+      nPat:
+        "$serde_json::private::Number": "0"
+    performance: "[perf]"
+    traceData:
+      decision:
+        result: NO_PATIENT_MATCH
+      nOrig:
+        result:
+          "$serde_json::private::Number": "1"
+      nPat:
+        result:
+          "$serde_json::private::Number": "0"
+  output:
+    id: output
+    input:
+      decision: NO_PATIENT_MATCH
+      nOrig:
+        "$serde_json::private::Number": "1"
+      nPat:
+        "$serde_json::private::Number": "0"
+    name: Insight
+    order:
+      "$serde_json::private::Number": "4"
+    output: ~
+    performance: "[perf]"
+    traceData: ~
+  sw_pat:
+    id: sw_pat
+    input:
+      clue:
+        code:
+          "$serde_json::private::Number": "11000"
+      ocls:
+        - code:
+            "$serde_json::private::Number": "11000"
+          sameClaim: true
+          sameDate: true
+          samePatient: true
+          seq:
+            "$serde_json::private::Number": "1"
+      oclsPat: []
+    name: any same-patient OCL
+    order:
+      "$serde_json::private::Number": "2"
+    output:
+      clue:
+        code:
+          "$serde_json::private::Number": "11000"
+      ocls:
+        - code:
+            "$serde_json::private::Number": "11000"
+          sameClaim: true
+          sameDate: true
+          samePatient: true
+          seq:
+            "$serde_json::private::Number": "1"
+      oclsPat: []
+    performance: "[perf]"
+    traceData:
+      statements:
+        - id: s_pat_n

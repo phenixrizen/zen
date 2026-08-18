@@ -1,0 +1,464 @@
+---
+source: core/engine/tests/engine.rs
+expression: serialized_result
+---
+performance: "[perf]"
+result:
+  decision: NO_SURGERY
+  nDos:
+    "$serde_json::private::Number": "1"
+  nPat:
+    "$serde_json::private::Number": "1"
+  nSurg:
+    "$serde_json::private::Number": "0"
+trace:
+  ex_dos:
+    id: ex_dos
+    input:
+      clue:
+        code:
+          "$serde_json::private::Number": "11000"
+      ocls:
+        - code:
+            "$serde_json::private::Number": "99213"
+          sameClaim: false
+          sameDate: true
+          samePatient: true
+          seq:
+            "$serde_json::private::Number": "1"
+      oclsPat:
+        - code:
+            "$serde_json::private::Number": "99213"
+          sameClaim: false
+          sameDate: true
+          samePatient: true
+          seq:
+            "$serde_json::private::Number": "1"
+    name: narrow to same date
+    order:
+      "$serde_json::private::Number": "3"
+    output:
+      clue:
+        code:
+          "$serde_json::private::Number": "11000"
+      ocls:
+        - code:
+            "$serde_json::private::Number": "99213"
+          sameClaim: false
+          sameDate: true
+          samePatient: true
+          seq:
+            "$serde_json::private::Number": "1"
+      oclsDos:
+        - code:
+            "$serde_json::private::Number": "99213"
+          sameClaim: false
+          sameDate: true
+          samePatient: true
+          seq:
+            "$serde_json::private::Number": "1"
+      oclsPat:
+        - code:
+            "$serde_json::private::Number": "99213"
+          sameClaim: false
+          sameDate: true
+          samePatient: true
+          seq:
+            "$serde_json::private::Number": "1"
+    performance: "[perf]"
+    traceData:
+      oclsDos:
+        result:
+          - code:
+              "$serde_json::private::Number": "99213"
+            sameClaim: false
+            sameDate: true
+            samePatient: true
+            seq:
+              "$serde_json::private::Number": "1"
+  ex_pat:
+    id: ex_pat
+    input:
+      clue:
+        code:
+          "$serde_json::private::Number": "11000"
+      ocls:
+        - code:
+            "$serde_json::private::Number": "99213"
+          sameClaim: false
+          sameDate: true
+          samePatient: true
+          seq:
+            "$serde_json::private::Number": "1"
+    name: narrow to same patient
+    order:
+      "$serde_json::private::Number": "1"
+    output:
+      clue:
+        code:
+          "$serde_json::private::Number": "11000"
+      ocls:
+        - code:
+            "$serde_json::private::Number": "99213"
+          sameClaim: false
+          sameDate: true
+          samePatient: true
+          seq:
+            "$serde_json::private::Number": "1"
+      oclsPat:
+        - code:
+            "$serde_json::private::Number": "99213"
+          sameClaim: false
+          sameDate: true
+          samePatient: true
+          seq:
+            "$serde_json::private::Number": "1"
+    performance: "[perf]"
+    traceData:
+      oclsPat:
+        result:
+          - code:
+              "$serde_json::private::Number": "99213"
+            sameClaim: false
+            sameDate: true
+            samePatient: true
+            seq:
+              "$serde_json::private::Number": "1"
+  ex_surg:
+    id: ex_surg
+    input:
+      clue:
+        code:
+          "$serde_json::private::Number": "11000"
+      ocls:
+        - code:
+            "$serde_json::private::Number": "99213"
+          sameClaim: false
+          sameDate: true
+          samePatient: true
+          seq:
+            "$serde_json::private::Number": "1"
+      oclsDos:
+        - code:
+            "$serde_json::private::Number": "99213"
+          sameClaim: false
+          sameDate: true
+          samePatient: true
+          seq:
+            "$serde_json::private::Number": "1"
+      oclsPat:
+        - code:
+            "$serde_json::private::Number": "99213"
+          sameClaim: false
+          sameDate: true
+          samePatient: true
+          seq:
+            "$serde_json::private::Number": "1"
+    name: narrow to surgery range
+    order:
+      "$serde_json::private::Number": "5"
+    output:
+      clue:
+        code:
+          "$serde_json::private::Number": "11000"
+      ocls:
+        - code:
+            "$serde_json::private::Number": "99213"
+          sameClaim: false
+          sameDate: true
+          samePatient: true
+          seq:
+            "$serde_json::private::Number": "1"
+      oclsDos:
+        - code:
+            "$serde_json::private::Number": "99213"
+          sameClaim: false
+          sameDate: true
+          samePatient: true
+          seq:
+            "$serde_json::private::Number": "1"
+      oclsPat:
+        - code:
+            "$serde_json::private::Number": "99213"
+          sameClaim: false
+          sameDate: true
+          samePatient: true
+          seq:
+            "$serde_json::private::Number": "1"
+      oclsSurg: []
+    performance: "[perf]"
+    traceData:
+      oclsSurg:
+        result: []
+  input:
+    id: input
+    input: ~
+    name: Claim
+    order:
+      "$serde_json::private::Number": "0"
+    output:
+      clue:
+        code:
+          "$serde_json::private::Number": "11000"
+      ocls:
+        - code:
+            "$serde_json::private::Number": "99213"
+          sameClaim: false
+          sameDate: true
+          samePatient: true
+          seq:
+            "$serde_json::private::Number": "1"
+    performance: "[perf]"
+    traceData: ~
+  leaf_nosurg:
+    id: leaf_nosurg
+    input:
+      clue:
+        code:
+          "$serde_json::private::Number": "11000"
+      ocls:
+        - code:
+            "$serde_json::private::Number": "99213"
+          sameClaim: false
+          sameDate: true
+          samePatient: true
+          seq:
+            "$serde_json::private::Number": "1"
+      oclsDos:
+        - code:
+            "$serde_json::private::Number": "99213"
+          sameClaim: false
+          sameDate: true
+          samePatient: true
+          seq:
+            "$serde_json::private::Number": "1"
+      oclsPat:
+        - code:
+            "$serde_json::private::Number": "99213"
+          sameClaim: false
+          sameDate: true
+          samePatient: true
+          seq:
+            "$serde_json::private::Number": "1"
+      oclsSurg: []
+    name: no surgery
+    order:
+      "$serde_json::private::Number": "7"
+    output:
+      decision: NO_SURGERY
+      nDos:
+        "$serde_json::private::Number": "1"
+      nPat:
+        "$serde_json::private::Number": "1"
+      nSurg:
+        "$serde_json::private::Number": "0"
+    performance: "[perf]"
+    traceData:
+      decision:
+        result: NO_SURGERY
+      nDos:
+        result:
+          "$serde_json::private::Number": "1"
+      nPat:
+        result:
+          "$serde_json::private::Number": "1"
+      nSurg:
+        result:
+          "$serde_json::private::Number": "0"
+  output:
+    id: output
+    input:
+      decision: NO_SURGERY
+      nDos:
+        "$serde_json::private::Number": "1"
+      nPat:
+        "$serde_json::private::Number": "1"
+      nSurg:
+        "$serde_json::private::Number": "0"
+    name: Insight
+    order:
+      "$serde_json::private::Number": "8"
+    output: ~
+    performance: "[perf]"
+    traceData: ~
+  sw_dos:
+    id: sw_dos
+    input:
+      clue:
+        code:
+          "$serde_json::private::Number": "11000"
+      ocls:
+        - code:
+            "$serde_json::private::Number": "99213"
+          sameClaim: false
+          sameDate: true
+          samePatient: true
+          seq:
+            "$serde_json::private::Number": "1"
+      oclsDos:
+        - code:
+            "$serde_json::private::Number": "99213"
+          sameClaim: false
+          sameDate: true
+          samePatient: true
+          seq:
+            "$serde_json::private::Number": "1"
+      oclsPat:
+        - code:
+            "$serde_json::private::Number": "99213"
+          sameClaim: false
+          sameDate: true
+          samePatient: true
+          seq:
+            "$serde_json::private::Number": "1"
+    name: any same-date OCL
+    order:
+      "$serde_json::private::Number": "4"
+    output:
+      clue:
+        code:
+          "$serde_json::private::Number": "11000"
+      ocls:
+        - code:
+            "$serde_json::private::Number": "99213"
+          sameClaim: false
+          sameDate: true
+          samePatient: true
+          seq:
+            "$serde_json::private::Number": "1"
+      oclsDos:
+        - code:
+            "$serde_json::private::Number": "99213"
+          sameClaim: false
+          sameDate: true
+          samePatient: true
+          seq:
+            "$serde_json::private::Number": "1"
+      oclsPat:
+        - code:
+            "$serde_json::private::Number": "99213"
+          sameClaim: false
+          sameDate: true
+          samePatient: true
+          seq:
+            "$serde_json::private::Number": "1"
+    performance: "[perf]"
+    traceData:
+      statements:
+        - id: s_dos_y
+  sw_pat:
+    id: sw_pat
+    input:
+      clue:
+        code:
+          "$serde_json::private::Number": "11000"
+      ocls:
+        - code:
+            "$serde_json::private::Number": "99213"
+          sameClaim: false
+          sameDate: true
+          samePatient: true
+          seq:
+            "$serde_json::private::Number": "1"
+      oclsPat:
+        - code:
+            "$serde_json::private::Number": "99213"
+          sameClaim: false
+          sameDate: true
+          samePatient: true
+          seq:
+            "$serde_json::private::Number": "1"
+    name: any same-patient OCL
+    order:
+      "$serde_json::private::Number": "2"
+    output:
+      clue:
+        code:
+          "$serde_json::private::Number": "11000"
+      ocls:
+        - code:
+            "$serde_json::private::Number": "99213"
+          sameClaim: false
+          sameDate: true
+          samePatient: true
+          seq:
+            "$serde_json::private::Number": "1"
+      oclsPat:
+        - code:
+            "$serde_json::private::Number": "99213"
+          sameClaim: false
+          sameDate: true
+          samePatient: true
+          seq:
+            "$serde_json::private::Number": "1"
+    performance: "[perf]"
+    traceData:
+      statements:
+        - id: s_pat_y
+  sw_surg:
+    id: sw_surg
+    input:
+      clue:
+        code:
+          "$serde_json::private::Number": "11000"
+      ocls:
+        - code:
+            "$serde_json::private::Number": "99213"
+          sameClaim: false
+          sameDate: true
+          samePatient: true
+          seq:
+            "$serde_json::private::Number": "1"
+      oclsDos:
+        - code:
+            "$serde_json::private::Number": "99213"
+          sameClaim: false
+          sameDate: true
+          samePatient: true
+          seq:
+            "$serde_json::private::Number": "1"
+      oclsPat:
+        - code:
+            "$serde_json::private::Number": "99213"
+          sameClaim: false
+          sameDate: true
+          samePatient: true
+          seq:
+            "$serde_json::private::Number": "1"
+      oclsSurg: []
+    name: any surgery OCL
+    order:
+      "$serde_json::private::Number": "6"
+    output:
+      clue:
+        code:
+          "$serde_json::private::Number": "11000"
+      ocls:
+        - code:
+            "$serde_json::private::Number": "99213"
+          sameClaim: false
+          sameDate: true
+          samePatient: true
+          seq:
+            "$serde_json::private::Number": "1"
+      oclsDos:
+        - code:
+            "$serde_json::private::Number": "99213"
+          sameClaim: false
+          sameDate: true
+          samePatient: true
+          seq:
+            "$serde_json::private::Number": "1"
+      oclsPat:
+        - code:
+            "$serde_json::private::Number": "99213"
+          sameClaim: false
+          sameDate: true
+          samePatient: true
+          seq:
+            "$serde_json::private::Number": "1"
+      oclsSurg: []
+    performance: "[perf]"
+    traceData:
+      statements:
+        - id: s_surg_n
