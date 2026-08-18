@@ -36,6 +36,7 @@ pub struct DecisionGraph {
     graph: StableDiDecisionGraph,
     config: DecisionGraphConfig,
     parent_nodes: Option<Variable>,
+    params: Option<Variable>,
 }
 
 #[derive(Debug)]
@@ -50,11 +51,19 @@ pub struct DecisionGraphConfig {
 impl DecisionGraph {
     pub fn try_new(config: DecisionGraphConfig) -> Result<Self, DecisionGraphValidationError> {
         let graph = Self::build_graph(config.content.deref())?;
+        // Converted once per evaluation; every node shares the same handle.
+        let params = config
+            .content
+            .params
+            .as_ref()
+            .map(|value| Variable::from(value.as_ref().clone()));
+
         Ok(Self {
             initial_graph: graph.clone(),
             graph,
             config,
             parent_nodes: None,
+            params,
         })
     }
 
@@ -148,6 +157,7 @@ impl DecisionGraph {
             name: node.name.clone(),
             input,
             nodes,
+            params: self.params.clone(),
             extensions: self.config.extensions.clone(),
             iteration: self.config.iteration,
             trace: match self.config.trace {

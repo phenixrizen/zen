@@ -29,6 +29,7 @@ where
     pub node: NodeData,
     pub input: Variable,
     pub nodes: Option<Variable>,
+    pub params: Option<Variable>,
     pub trace: Option<RefCell<TraceData>>,
     pub extensions: NodeHandlerExtensions,
     pub iteration: u8,
@@ -41,15 +42,20 @@ where
     TraceData: TraceDataType,
 {
     pub fn input_with_nodes(&self) -> Variable {
-        let Some(nodes) = &self.nodes else {
+        if self.nodes.is_none() && self.params.is_none() {
             return self.input.shallow_clone();
-        };
+        }
         let Variable::Object(object) = &self.input else {
             return self.input.shallow_clone();
         };
 
         let mut map = object.borrow().clone();
-        map.insert(Variable::nodes_key(), nodes.clone());
+        if let Some(nodes) = &self.nodes {
+            map.insert(Variable::nodes_key(), nodes.clone());
+        }
+        if let Some(params) = &self.params {
+            map.insert(Variable::params_key(), params.clone());
+        }
         Variable::from_object(map)
     }
 
@@ -59,6 +65,7 @@ where
             name: base.name,
             input: base.input,
             nodes: base.nodes,
+            params: base.params,
             extensions: base.extensions,
             iteration: base.iteration,
             trace: base.config.trace.then(|| Default::default()),
@@ -68,7 +75,12 @@ where
     }
 
     pub fn isolate(&self) -> Isolate {
-        make_isolate(&self.input, self.nodes.as_ref(), &self.extensions)
+        make_isolate(
+            &self.input,
+            self.nodes.as_ref(),
+            self.params.as_ref(),
+            &self.extensions,
+        )
     }
 
     pub fn trace<Function>(&self, mutator: Function)
@@ -211,6 +223,7 @@ pub struct NodeContextBase {
     pub name: Arc<str>,
     pub input: Variable,
     pub nodes: Option<Variable>,
+    pub params: Option<Variable>,
     pub iteration: u8,
     pub extensions: NodeHandlerExtensions,
     pub config: NodeContextConfig,
@@ -220,6 +233,7 @@ pub struct NodeContextBase {
 pub(crate) fn make_isolate(
     input: &Variable,
     nodes: Option<&Variable>,
+    params: Option<&Variable>,
     extensions: &NodeHandlerExtensions,
 ) -> Isolate {
     let mut isolate =
@@ -227,13 +241,21 @@ pub(crate) fn make_isolate(
     if let Some(nodes) = nodes {
         isolate.set_local(Variable::nodes_key(), nodes.clone());
     }
+    if let Some(params) = params {
+        isolate.set_local(Variable::params_key(), params.clone());
+    }
 
     isolate
 }
 
 impl NodeContextBase {
     pub fn isolate(&self) -> Isolate {
-        make_isolate(&self.input, self.nodes.as_ref(), &self.extensions)
+        make_isolate(
+            &self.input,
+            self.nodes.as_ref(),
+            self.params.as_ref(),
+            &self.extensions,
+        )
     }
 
     pub fn error<Error>(&self, error: Error) -> NodeResult
@@ -287,6 +309,7 @@ where
             name: value.name,
             input: value.input,
             nodes: value.nodes,
+            params: value.params,
             extensions: value.extensions,
             iteration: value.iteration,
             config: value.config,

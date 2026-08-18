@@ -67,7 +67,14 @@ impl DatabaseHandler for RecordingHandler {
 }
 
 fn graph(node_content: serde_json::Value) -> DecisionContent {
-    serde_json::from_value(json!({
+    graph_with_params(node_content, None)
+}
+
+fn graph_with_params(
+    node_content: serde_json::Value,
+    params: Option<serde_json::Value>,
+) -> DecisionContent {
+    let mut document = json!({
         "nodes": [
             { "id": "input", "name": "Request", "type": "inputNode", "content": { "schema": "" } },
             { "id": "db", "name": "Lookup", "type": "databaseNode", "content": node_content },
@@ -77,8 +84,13 @@ fn graph(node_content: serde_json::Value) -> DecisionContent {
             { "id": "e1", "sourceId": "input", "targetId": "db", "type": "edge" },
             { "id": "e2", "sourceId": "db", "targetId": "output", "type": "edge" }
         ]
-    }))
-    .expect("graph fixture should deserialize")
+    });
+
+    if let Some(params) = params {
+        document["params"] = params;
+    }
+
+    serde_json::from_value(document).expect("graph fixture should deserialize")
 }
 
 async fn run(
@@ -86,7 +98,16 @@ async fn run(
     node_content: serde_json::Value,
     context: serde_json::Value,
 ) -> Result<Variable, String> {
-    let content = graph(node_content);
+    run_with_params(handler, node_content, context, None).await
+}
+
+async fn run_with_params(
+    handler: Arc<RecordingHandler>,
+    node_content: serde_json::Value,
+    context: serde_json::Value,
+    params: Option<serde_json::Value>,
+) -> Result<Variable, String> {
+    let content = graph_with_params(node_content, params);
     let decision = Decision::from(content.as_graph().unwrap().clone())
         .with_database_handler(Some(handler.clone()));
 
@@ -486,5 +507,94 @@ async fn node_content_round_trips_through_serde() {
     assert_eq!(
         reserialized["nodes"][1]["content"], original["nodes"][1]["content"],
         "databaseNode content must survive a serde round-trip unchanged"
+    );
+}
+
+// ---------------------------------------------------------------- params
+
+/// Decision-level constants reach the node's expressions as `$params`, so a policy can carry
+/// its own code sets and effective dates instead of relying on the host to inject them.
+#[tokio::test]
+#[cfg_attr(miri, ignore)]
+async fn params_are_readable_from_conditions() {
+    let handler = RecordingHandler::empty();
+    let node = select_node(
+        json!([
+            { "id": "c1", "column": "CODE", "operator": "in",
+              "value": "$params.codes", "as": "text" },
+            { "id": "c2", "column": "EFFECTIVESTARTDATE", "operator": "lte",
+              "value": "$params.effectiveDate", "as": "text" }
+        ]),
+        "rows",
+    );
+
+    run_with_params(
+        handler.clone(),
+        node,
+        json!({ "clue": { "code": "11000" } }),
+        Some(json!({ "codes": ["11000", "11001"], "effectiveDate": "2026-01-01" })),
+    )
+    .await
+    .expect("evaluation should succeed");
+
+    let conditions = handler.select().conditions;
+    assert_eq!(
+        conditions[0].values,
+        vec![
+            DatabaseValue::Text("11000".into()),
+            DatabaseValue::Text("11001".into())
+        ]
+    );
+    assert_eq!(
+        conditions[1].values,
+        vec![DatabaseValue::Text("2026-01-01".into())]
+    );
+}
+
+/// The data source itself can be selected per policy, which is how a decision pins the
+/// reference-data vintage it was authored against.
+#[tokio::test]
+#[cfg_attr(miri, ignore)]
+async fn params_can_select_the_source() {
+    let handler = RecordingHandler::empty();
+    let node = json!({
+        "source": { "expression": "$params.catalogDb" },
+        "query": { "type": "select", "table": "fees_short", "columns": ["CODE"] },
+        "result": "rows"
+    });
+
+    run_with_params(
+        handler.clone(),
+        node,
+        json!({}),
+        Some(json!({ "catalogDb": "catalog_2026q1" })),
+    )
+    .await
+    .expect("evaluation should succeed");
+
+    assert_eq!(handler.only().source, "catalog_2026q1");
+}
+
+/// `$params` is a reserved key: it must not leak into the decision result.
+#[tokio::test]
+#[cfg_attr(miri, ignore)]
+async fn params_do_not_leak_into_output() {
+    let handler = RecordingHandler::empty();
+    let mut node = select_node(json!([]), "count");
+    node["passThrough"] = json!(true);
+
+    let output = run_with_params(
+        handler,
+        node,
+        json!({ "clue": { "code": "11000" } }),
+        Some(json!({ "secret": "should-not-appear" })),
+    )
+    .await
+    .expect("evaluation should succeed");
+
+    assert_eq!(
+        output,
+        json!({ "clue": { "code": "11000" }, "lookup": 0 }).into(),
+        "$params must be stripped from the result"
     );
 }

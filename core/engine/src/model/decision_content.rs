@@ -110,6 +110,13 @@ pub struct GraphContent {
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub imports: Vec<Arc<str>>,
 
+    /// Decision-level constants, exposed to every node as `$params`.
+    ///
+    /// Unlike evaluation input, these travel with the decision document, so a policy and the
+    /// constants it depends on cannot drift apart.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub params: Option<Arc<serde_json::Value>>,
+
     #[serde(skip)]
     pub compiled_cache: Option<Arc<OpcodeCache>>,
 
