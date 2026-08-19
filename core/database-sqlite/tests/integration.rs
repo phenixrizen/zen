@@ -9,8 +9,20 @@ use zen_engine::{DecisionEngine, Variable};
 
 /// A miniature stand-in for the real fee-schedule table, built at test time from SQL so no
 /// binary fixture is committed.
-/// Built by the real `sqlite3` binary, so the fixture is authored by neither the driver nor its
-/// engine - this is a genuine file-format compatibility test, not a round-trip.
+/// True when the `sqlite3` binary is available to author fixtures.
+///
+/// The fixture is deliberately built by real SQLite rather than by the driver, so these are
+/// file-format compatibility tests rather than round-trips. Where the binary is absent the tests
+/// skip rather than fail, since its absence says nothing about the driver.
+fn sqlite3_available() -> bool {
+    std::process::Command::new("sqlite3")
+        .arg("--version")
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .status()
+        .is_ok()
+}
+
 fn catalog() -> TempDir {
     let dir = TempDir::new().expect("tempdir");
     let path = dir.path().join("catalog.db");
@@ -68,6 +80,10 @@ async fn run(dir: &TempDir, node: serde_json::Value, input: serde_json::Value) -
 
 #[tokio::test]
 async fn looks_up_reference_data_by_code() {
+    if !sqlite3_available() {
+        eprintln!("sqlite3 CLI absent; skipping");
+        return;
+    }
     let dir = catalog();
     let output = run(
         &dir,
@@ -95,6 +111,10 @@ async fn looks_up_reference_data_by_code() {
 /// envelope cannot express without shipping the table.
 #[tokio::test]
 async fn filters_by_effective_date_window() {
+    if !sqlite3_available() {
+        eprintln!("sqlite3 CLI absent; skipping");
+        return;
+    }
     let dir = catalog();
     let node = |dos: i64| {
         json!({
@@ -122,6 +142,10 @@ async fn filters_by_effective_date_window() {
 
 #[tokio::test]
 async fn binds_an_in_list_without_touching_statement_text() {
+    if !sqlite3_available() {
+        eprintln!("sqlite3 CLI absent; skipping");
+        return;
+    }
     let dir = catalog();
     let output = run(
         &dir,
@@ -155,6 +179,10 @@ async fn binds_an_in_list_without_touching_statement_text() {
 /// reference data, in the database, with the list bound rather than interpolated.
 #[tokio::test]
 async fn joins_claim_lines_against_reference_data() {
+    if !sqlite3_available() {
+        eprintln!("sqlite3 CLI absent; skipping");
+        return;
+    }
     let dir = catalog();
     let output = run(
         &dir,
@@ -198,6 +226,10 @@ async fn joins_claim_lines_against_reference_data() {
 /// structurally rather than by cleanup.
 #[tokio::test]
 async fn relations_do_not_leak_between_evaluations() {
+    if !sqlite3_available() {
+        eprintln!("sqlite3 CLI absent; skipping");
+        return;
+    }
     let dir = catalog();
     let eng = engine(&dir);
 
@@ -235,6 +267,10 @@ async fn relations_do_not_leak_between_evaluations() {
 
 #[tokio::test]
 async fn raw_queries_are_refused_unless_enabled() {
+    if !sqlite3_available() {
+        eprintln!("sqlite3 CLI absent; skipping");
+        return;
+    }
     let dir = catalog();
     let node = json!({
         "source": "catalog",
@@ -261,6 +297,10 @@ async fn raw_queries_are_refused_unless_enabled() {
 
 #[tokio::test]
 async fn unknown_source_is_an_error_not_a_path_probe() {
+    if !sqlite3_available() {
+        eprintln!("sqlite3 CLI absent; skipping");
+        return;
+    }
     let dir = catalog();
     let result = engine(&dir)
         .create_decision(graph(json!({
@@ -286,6 +326,10 @@ async fn unknown_source_is_an_error_not_a_path_probe() {
 /// engine - the same shape as `LocalPoolHandle::spawn_pinned`.
 #[test]
 fn concurrent_evaluations_with_relations_do_not_contend() {
+    if !sqlite3_available() {
+        eprintln!("sqlite3 CLI absent; skipping");
+        return;
+    }
     let dir = catalog();
     let eng = Arc::new(engine(&dir));
 
