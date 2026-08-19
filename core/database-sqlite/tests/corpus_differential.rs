@@ -73,9 +73,15 @@ async fn every_convertible_production_query_matches_sqlite() {
         serde_json::from_str(&std::fs::read_to_string(&manifest).expect("read manifest"))
             .expect("parse manifest");
 
-    let handler = SqliteDatabaseHandler::new(SqliteConfig::with_root(&dir));
+    let handler = SqliteDatabaseHandler::new(SqliteConfig::with_root(&dir).allow_raw(true));
     let engine = DecisionEngine::default().with_database_handler(Some(Arc::new(handler)));
 
+    // The same site is evaluated twice: as a declarative query and as raw SQL passed through
+    // verbatim. Both are compared against the same SQLite oracle, so a disagreement between them
+    // is as interesting as a disagreement with SQLite.
+    let mut raw_matched = 0usize;
+    let mut raw_total = 0usize;
+    let mut raw_errors: Vec<String> = Vec::new();
     let mut matched = 0usize;
     let mut non_empty_matched = 0usize;
     let mut mismatches: Vec<String> = Vec::new();
@@ -119,10 +125,42 @@ async fn every_convertible_production_query_matches_sqlite() {
                 non_empty_matched += 1;
             }
         } else if mismatches.len() < 8 {
+            // fallthrough below
             mismatches.push(format!(
                 "{label}\n      expected: {}\n      actual:   {}",
                 serde_json::to_string(expected).unwrap_or_default(),
                 serde_json::to_string(&actual).unwrap_or_default()
+            ));
+        }
+
+        // Now the same site as raw SQL.
+        let Some(raw_node) = entry.get("rawNode").filter(|v| !v.is_null()) else {
+            continue;
+        };
+        raw_total += 1;
+        let raw_decision = match engine.create_decision(graph(raw_node)) {
+            Ok(d) => d,
+            Err(e) => {
+                raw_errors.push(format!("{label}: raw create: {e:?}"));
+                continue;
+            }
+        };
+        let raw_result = match raw_decision.evaluate(entry["input"].clone().into()).await {
+            Ok(r) => r.result,
+            Err(e) => {
+                raw_errors.push(format!("{label}: raw evaluate: {e:?}"));
+                continue;
+            }
+        };
+        let raw_json: Value = serde_json::to_value(&raw_result).expect("raw result to json");
+        let raw_actual = raw_json.get(key).cloned().unwrap_or(Value::Null);
+        if same(&raw_actual, expected) {
+            raw_matched += 1;
+        } else if raw_errors.len() < 8 {
+            raw_errors.push(format!(
+                "{label}: RAW MISMATCH\n      expected: {}\n      actual:   {}",
+                serde_json::to_string(expected).unwrap_or_default(),
+                serde_json::to_string(&raw_actual).unwrap_or_default()
             ));
         }
     }
@@ -134,6 +172,13 @@ async fn every_convertible_production_query_matches_sqlite() {
         .count();
 
     println!("\n=== corpus differential ===");
+    println!(
+        "  RAW      matched {raw_matched}/{raw_total}, errors {}",
+        raw_errors.len()
+    );
+    for e in raw_errors.iter().take(6) {
+        println!("    {e}");
+    }
     println!("  matched          {matched}/{total}");
     println!("  of the {non_empty_total} that return rows: {non_empty_matched} matched");
     println!("  errors           {}", errors.len());
@@ -144,6 +189,11 @@ async fn every_convertible_production_query_matches_sqlite() {
         println!("    MISMATCH {m}");
     }
 
+    assert!(
+        raw_errors.is_empty() && raw_matched == raw_total,
+        "raw path: {raw_matched}/{raw_total} matched, {} errors",
+        raw_errors.len()
+    );
     assert!(
         errors.is_empty() && matched == total,
         "{} mismatched, {} errored, out of {total}",
