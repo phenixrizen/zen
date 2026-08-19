@@ -45,6 +45,19 @@ impl ZenEngine {
     pub fn new(loader: DynamicDecisionLoader, custom_node: DynamicCustomNode) -> Self {
         Self(DecisionEngine::new(Arc::new(loader), Arc::new(custom_node)))
     }
+
+    /// Attaches the built-in SQLite driver, configured from JSON.
+    ///
+    /// The driver runs in-process: once registered, a `databaseNode` executes entirely on the
+    /// Rust side, so no query crosses back over the FFI to the host.
+    #[cfg(feature = "sqlite")]
+    pub fn with_sqlite(self, config_json: &str) -> Result<Self, String> {
+        use zen_database_sqlite::{SqliteConfig, SqliteDatabaseHandler};
+
+        let config = SqliteConfig::from_json(config_json).map_err(|e| e.to_string())?;
+        let handler = SqliteDatabaseHandler::new(config);
+        Ok(Self(self.0.with_database_handler(Some(Arc::new(handler)))))
+    }
 }
 
 #[repr(C)]

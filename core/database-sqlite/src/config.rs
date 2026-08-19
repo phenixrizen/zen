@@ -1,9 +1,29 @@
 //! How logical source names map to database files.
 
 use ahash::HashMap;
+use serde::Deserialize;
 use std::path::{Path, PathBuf};
 
 use crate::error::SqliteError;
+
+/// Wire form of [`SqliteConfig`], so a host that can only pass a string — a C or Go binding,
+/// an environment variable, a config file — can still configure the driver.
+///
+/// ```json
+/// { "root": "/catalog", "allowRaw": false, "maxConnections": 8 }
+/// { "sources": { "catalog": "/catalog/catalog.db" } }
+/// ```
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct ConfigDto {
+    /// Resolve `<root>/<name>.db`.
+    root: Option<PathBuf>,
+    /// Or name each source explicitly.
+    sources: Option<HashMap<String, PathBuf>>,
+    #[serde(default)]
+    allow_raw: bool,
+    max_connections: Option<usize>,
+}
 
 #[derive(Debug, Clone)]
 pub struct SqliteConfig {
@@ -60,6 +80,33 @@ impl SqliteConfig {
             mmap_size: 268_435_456,
             busy_timeout_ms: 5_000,
         }
+    }
+
+    /// Builds a configuration from JSON. Either `root` or `sources` must be given.
+    pub fn from_json(json: &str) -> Result<Self, SqliteError> {
+        let dto: ConfigDto = serde_json::from_str(json)
+            .map_err(|e| SqliteError::query(format!("invalid sqlite config: {e}")))?;
+
+        let mut config = match (dto.root, dto.sources) {
+            (Some(root), None) => Self::with_root(root),
+            (None, Some(sources)) => Self::with_sources(sources),
+            (Some(_), Some(_)) => {
+                return Err(SqliteError::query(
+                    "sqlite config sets both `root` and `sources`; give exactly one",
+                ))
+            }
+            (None, None) => {
+                return Err(SqliteError::query(
+                    "sqlite config must set either `root` or `sources`",
+                ))
+            }
+        };
+
+        config.allow_raw = dto.allow_raw;
+        if let Some(max) = dto.max_connections {
+            config.max_connections = max.max(1);
+        }
+        Ok(config)
     }
 
     pub fn allow_raw(mut self, allow: bool) -> Self {
@@ -119,6 +166,28 @@ mod tests {
             config.resolve("fees_short").expect("valid name"),
             PathBuf::from("/catalog/fees_short.db")
         );
+    }
+
+    #[test]
+    fn json_config_round_trips() {
+        let c =
+            SqliteConfig::from_json(r#"{"root":"/catalog","allowRaw":true,"maxConnections":3}"#)
+                .expect("valid config");
+        assert!(c.allow_raw);
+        assert_eq!(c.max_connections, 3);
+        assert_eq!(
+            c.resolve("fees").expect("name"),
+            PathBuf::from("/catalog/fees.db")
+        );
+
+        let c = SqliteConfig::from_json(r#"{"sources":{"catalog":"/tmp/r.db"}}"#).expect("valid");
+        assert!(!c.allow_raw, "raw must stay off unless asked for");
+        assert!(c.resolve("catalog").is_ok());
+        assert!(c.resolve("other").is_err());
+
+        for bad in [r#"{}"#, r#"{"root":"/a","sources":{}}"#, "not json"] {
+            assert!(SqliteConfig::from_json(bad).is_err(), "should reject {bad}");
+        }
     }
 
     #[test]

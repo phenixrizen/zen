@@ -7362,6 +7362,7 @@ version = "1.0.0-beta.12"
 dependencies = [
  "ahash 0.8.12",
  "rust_decimal",
+ "serde",
  "serde_json",
  "tempfile",
  "thiserror 1.0.69",
@@ -7463,6 +7464,7 @@ dependencies = [
  "strum 0.27.2",
  "tokio",
  "tokio-util",
+ "zen-database-sqlite",
  "zen-engine",
  "zen-expression",
  "zen-tmpl",

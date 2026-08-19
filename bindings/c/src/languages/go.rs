@@ -125,6 +125,45 @@ pub extern "C" fn zen_engine_new_golang_with_loader_config(
     ZenResult::ok(Box::into_raw(Box::new(engine)) as *mut ZenEngineStruct)
 }
 
+/// Creates a DecisionEngine with the built-in SQLite driver registered, for `databaseNode`.
+///
+/// `sqlite_config` is JSON, e.g. `{"root":"/catalog"}` or
+/// `{"sources":{"catalog":"/catalog/catalog.db"},"allowRaw":true}`.
+///
+/// Registration happens once, at startup. After that every `databaseNode` query is executed in
+/// Rust against the reference data directly — unlike a custom node, nothing crosses back into Go
+/// per lookup. Caller is responsible for freeing the engine.
+///
+/// Only present when zen-ffi is built with the `sqlite` feature; calling it otherwise is a link
+/// error, since the driver is not compiled in.
+#[cfg(feature = "sqlite")]
+#[no_mangle]
+pub extern "C" fn zen_engine_new_golang_with_sqlite(
+    maybe_loader: Option<&usize>,
+    maybe_custom_node: Option<&usize>,
+    sqlite_config: *const c_char,
+) -> ZenResult<ZenEngineStruct> {
+    use crate::error::ZenError;
+    use std::ffi::CStr;
+
+    let config = match unsafe { CStr::from_ptr(sqlite_config) }.to_str() {
+        Ok(config) => config,
+        Err(_) => return ZenResult::error(ZenError::InvalidArgument),
+    };
+
+    let loader = GoDecisionLoader::new(map_handler(maybe_loader.cloned()));
+    let custom_node = GoCustomNode::new(map_handler(maybe_custom_node.cloned()));
+    let engine = ZenEngine::new(
+        DynamicDecisionLoader::Go(loader),
+        DynamicCustomNode::Go(custom_node),
+    );
+
+    match engine.with_sqlite(config) {
+        Ok(engine) => ZenResult::ok(Box::into_raw(Box::new(engine)) as *mut ZenEngineStruct),
+        Err(_) => ZenResult::error(ZenError::InvalidArgument),
+    }
+}
+
 #[allow(unused_doc_comments)]
 /// cbindgen:ignore
 extern "C" {
