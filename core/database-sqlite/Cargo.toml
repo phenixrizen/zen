@@ -6,6 +6,10 @@ version = "1.0.0-beta.12"
 edition = "2021"
 publish = false
 
+[features]
+# Mirrors the workspace: the engine is built both ways in CI, so the driver must be too.
+arbitrary_precision = ["zen-engine/arbitrary_precision", "zen-types/arbitrary_precision"]
+
 [dependencies]
 zen-engine = { path = "../engine", version = "1.0.0-beta.12" }
 zen-types = { path = "../types", version = "1.0.0-beta.12" }
