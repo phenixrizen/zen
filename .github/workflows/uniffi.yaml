@@ -547,7 +547,7 @@ jobs:
       - name: Checkout zen-ios
         uses: actions/checkout@v3
         with:
-          repository: gorules/zen-ios
+          repository: phenixrizen/zen-ios
           persist-credentials: false
           token: ${{ secrets.PAT }}
 
@@ -597,7 +597,7 @@ jobs:
       - name: Push changes
         uses: ad-m/github-push-action@master
         with:
-          repository: gorules/zen-ios
+          repository: phenixrizen/zen-ios
           github_token: ${{ secrets.PAT }}
           branch: ${{ env.BRANCH_NAME }}
 
