@@ -315,6 +315,15 @@ jobs:
         run: ls ./
         shell: bash
 
+      # actions/setup-node writes an .npmrc and points NPM_CONFIG_USERCONFIG at it, but
+      # this package publishes through yarn 1, which ignores that variable entirely.
+      # Without an .npmrc in the working directory yarn reports "No token found" and
+      # cannot prompt, so the publish fails with the token correctly set.
+      - name: Authenticate yarn against npm
+        run: echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > .npmrc
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
       - name: Lerna publish
         run: yarn lerna publish from-package --dist-tag ${{ contains(github.ref, '-beta') && 'beta' || 'latest' }} --no-verify-access --yes
         env:
