@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.2.0](https://github.com/phenixrizen/zen/compare/zen-macros-v2.1.0...zen-macros-v2.2.0) (2026-08-27)
+
+
+### Miscellaneous
+
+* **zen-macros:** Synchronize core versions
+
 ## [2.1.0](https://github.com/phenixrizen/zen/compare/zen-macros-v2.0.1...zen-macros-v2.1.0) (2026-08-27)
 
 
