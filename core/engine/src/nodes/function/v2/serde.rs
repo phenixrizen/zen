@@ -107,7 +107,8 @@ impl<'js> IntoJs<'js> for JsValue {
     }
 }
 
-pub struct JsValueWithNodes(pub JsValue);
+/// Node input, plus the reserved `$nodes` and `$params` handles.
+pub struct JsValueWithNodes(pub JsValue, pub Option<Variable>);
 
 impl<'js> IntoJs<'js> for JsValueWithNodes {
     fn into_js(self, ctx: &Ctx<'js>) -> rquickjs::Result<QValue<'js>> {
@@ -141,6 +142,13 @@ impl<'js> IntoJs<'js> for JsValueWithNodes {
         )?;
 
         obj.set("$nodes", nodes_proxy)?;
+
+        // Params are decision-level constants and typically small, so they are materialized
+        // directly rather than behind a lazy proxy like $nodes.
+        if let Some(params) = self.1 {
+            obj.set("$params", JsValue(params).into_js(ctx)?)?;
+        }
+
         Ok(obj.into_value())
     }
 }

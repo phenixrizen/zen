@@ -2,7 +2,7 @@ use ahash::{HashSet, HashSetExt};
 use zen_types::rccell::RcCell;
 use zen_types::variable::Variable;
 
-pub(crate) const ZEN_RESERVED_PROPERTIES: &[&str] = &["$nodes"];
+pub(crate) const ZEN_RESERVED_PROPERTIES: &[&str] = &["$nodes", "$params"];
 
 pub(crate) struct VariableCleaner {
     visited: HashSet<usize>,

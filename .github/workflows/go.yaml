@@ -57,6 +57,18 @@ jobs:
         if: ${{ matrix.settings.host == 'ubuntu-latest' && contains(matrix.settings.target, 'linux') }}
         working-directory: bindings/c
         run: cargo zigbuild --release --all-features --target ${{ matrix.settings.target }}.${{ env.GLIBC_VERSION }} --locked
+      # turso_sdk_kit's build script embeds a Windows version resource, and shells
+      # out to a bare `windres` to do it. Cross-compiling from Linux there is no
+      # such binary on PATH, so the build panics with NotFound before any Rust is
+      # compiled. mingw-w64's binutils supplies one under a target-prefixed name.
+      - name: Provide a Windows resource compiler
+        if: ${{ contains(matrix.settings.target, 'windows') }}
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y binutils-mingw-w64-x86-64
+          sudo ln -sf /usr/bin/x86_64-w64-mingw32-windres /usr/local/bin/windres
+          windres --version | head -1
+
       - name: Build (zig, windows)
         if: ${{ contains(matrix.settings.target, 'windows') }}
         working-directory: bindings/c

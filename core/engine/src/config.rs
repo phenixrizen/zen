@@ -6,6 +6,7 @@ pub struct ZenConfig {
     pub nodes_in_context: AtomicBool,
     pub function_timeout_millis: AtomicU64,
     pub http_auth: AtomicBool,
+    pub database_max_rows: AtomicU64,
 }
 
 impl Default for ZenConfig {
@@ -14,6 +15,7 @@ impl Default for ZenConfig {
             nodes_in_context: AtomicBool::new(true),
             function_timeout_millis: AtomicU64::new(5_000),
             http_auth: AtomicBool::new(true),
+            database_max_rows: AtomicU64::new(10_000),
         }
     }
 }

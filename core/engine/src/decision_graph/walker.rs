@@ -32,6 +32,7 @@ pub(crate) struct GraphWalker {
     ordered: FixedBitSet,
     to_visit: Vec<NodeIndex>,
     visited_switch_nodes: Vec<NodeIndex>,
+    params: Option<Variable>,
 
     nodes_in_context: bool,
 }
@@ -39,8 +40,9 @@ pub(crate) struct GraphWalker {
 const ITER_MAX: usize = 1_000;
 
 impl GraphWalker {
-    pub fn new(graph: &StableDiDecisionGraph) -> Self {
+    pub fn new(graph: &StableDiDecisionGraph, params: Option<Variable>) -> Self {
         let mut walker = Self::empty(graph);
+        walker.params = params;
         walker.initialize_input_nodes(graph);
         walker
     }
@@ -60,6 +62,7 @@ impl GraphWalker {
             to_visit: Vec::new(),
             node_data: Default::default(),
             visited_switch_nodes: Default::default(),
+            params: None,
             iter: 0,
 
             nodes_in_context: ZEN_CONFIG.nodes_in_context.load(Ordering::Relaxed),
@@ -171,6 +174,9 @@ impl GraphWalker {
                     let mut isolate = Isolate::with_environment(input);
                     if let Some(nodes) = self.nodes_context() {
                         isolate.set_local(Variable::nodes_key(), nodes);
+                    }
+                    if let Some(params) = &self.params {
+                        isolate.set_local(Variable::params_key(), params.shallow_clone());
                     }
 
                     let mut statement_iter = content.statements.iter();

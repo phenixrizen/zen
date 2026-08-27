@@ -5,6 +5,7 @@ use std::sync::Arc;
 use ahash::{HashMap, HashMapExt, HashSet};
 use zen_expression::variable::VariableType;
 use zen_types::decision::{
+    DatabaseCondition, DatabaseNodeContent, DatabaseQuery, DatabaseResultShape, DatabaseSource,
     DecisionNode, DecisionNodeContent, DecisionNodeKind, DecisionTableContent,
     DecisionTableHitPolicy, DecisionTableOutputField, ExpressionNodeContent, FunctionNodeContent,
     SwitchNodeContent, SwitchStatementHitPolicy, TransformAttributes, TransformExecutionMode,
@@ -575,9 +576,228 @@ impl<'a> GraphAnalyzer<'a> {
                 analysis.output = output;
                 analysis.open = open && content.transform_attributes.pass_through;
             }
+            DecisionNodeKind::DatabaseNode { content } => {
+                let (handler_input, output) = self.transformed(
+                    node,
+                    &content.transform_attributes,
+                    &scope_input,
+                    |analyzer, scope| analyzer.check_database(node, content, scope),
+                );
+                analysis.handler_input = handler_input;
+                analysis.output = output;
+                analysis.open = open && content.transform_attributes.pass_through;
+                if matches!(content.query, DatabaseQuery::Raw(_)) {
+                    analysis.opaque = true;
+                }
+            }
         }
 
         analysis
+    }
+
+    fn check_database(
+        &mut self,
+        node: &DecisionNode,
+        content: &DatabaseNodeContent,
+        scope: &VariableType,
+    ) -> VariableType {
+        let expr_scope = Self::scope_with_nodes(scope, &self.nodes_scope.shallow_clone());
+
+        if let DatabaseSource::Expression { expression } = &content.source {
+            let resolved = self.check_expression(
+                &node.id,
+                None,
+                None,
+                expression,
+                ExpressionKind::Standard,
+                &expr_scope,
+            );
+            if !matches!(resolved, VariableType::String | VariableType::Any) {
+                self.diagnostics.push(Diagnostic::error(
+                    DiagnosticCode::TypeMismatch,
+                    DiagnosticLocation::block(self.path.clone(), node.id.clone()),
+                    format!("database source must resolve to a string, got `{resolved}`"),
+                ));
+            }
+        }
+
+        for relation in content.relations.iter() {
+            let rows = self.check_expression(
+                &node.id,
+                None,
+                None,
+                &relation.rows,
+                ExpressionKind::Standard,
+                &expr_scope,
+            );
+            let element = match &rows {
+                VariableType::Array(item) => item.as_ref().shallow_clone(),
+                VariableType::Any => VariableType::Any,
+                other => {
+                    self.diagnostics.push(Diagnostic::error(
+                        DiagnosticCode::TypeMismatch,
+                        DiagnosticLocation::block(self.path.clone(), node.id.clone()),
+                        format!(
+                            "relation `{}` rows must be an array, got `{other}`",
+                            relation.name
+                        ),
+                    ));
+                    VariableType::Any
+                }
+            };
+
+            // Column expressions are evaluated per row element, so they are scoped to it.
+            for column in relation.columns.iter() {
+                self.check_expression(
+                    &node.id,
+                    None,
+                    None,
+                    &column.value,
+                    ExpressionKind::Standard,
+                    &element,
+                );
+            }
+        }
+
+        match &content.query {
+            DatabaseQuery::Select(select) => {
+                for predicate in select.conditions.iter() {
+                    for condition in predicate.conditions() {
+                        self.check_condition(node, condition, &expr_scope);
+                    }
+                }
+                Self::select_output(&content.result, &select.columns)
+            }
+            DatabaseQuery::Raw(raw) => {
+                for parameter in raw.parameters.iter() {
+                    let resolved = self.check_expression(
+                        &node.id,
+                        Some(parameter.id.clone()),
+                        None,
+                        &parameter.value,
+                        ExpressionKind::Standard,
+                        &expr_scope,
+                    );
+                    if parameter.expand
+                        && !matches!(resolved, VariableType::Array(_) | VariableType::Any)
+                    {
+                        self.diagnostics.push(Diagnostic::error(
+                            DiagnosticCode::TypeMismatch,
+                            DiagnosticLocation::expression(
+                                self.path.clone(),
+                                node.id.clone(),
+                                parameter.id.clone(),
+                                None,
+                            ),
+                            format!(
+                                "expandable parameter `{}` requires an array, got `{resolved}`",
+                                parameter.name
+                            ),
+                        ));
+                    }
+                }
+
+                self.diagnostics.push(Diagnostic::warning(
+                    DiagnosticCode::UncheckedNode,
+                    DiagnosticLocation::block(self.path.clone(), node.id.clone()),
+                    "raw query results are not type-checked — use a select query to enable output type inference",
+                ));
+                Self::raw_output(&content.result)
+            }
+        }
+    }
+
+    fn check_condition(
+        &mut self,
+        node: &DecisionNode,
+        condition: &DatabaseCondition,
+        scope: &VariableType,
+    ) {
+        let location = DiagnosticLocation::expression(
+            self.path.clone(),
+            node.id.clone(),
+            condition.id.clone(),
+            None,
+        );
+
+        match (&condition.value, condition.operator.arity()) {
+            (None, Some(0)) => {}
+            (None, _) => {
+                self.diagnostics.push(Diagnostic::error(
+                    DiagnosticCode::TypeMismatch,
+                    location,
+                    format!("condition on `{}` requires a value", condition.column),
+                ));
+            }
+            (Some(_), Some(0)) => {
+                self.diagnostics.push(Diagnostic::error(
+                    DiagnosticCode::TypeMismatch,
+                    location,
+                    format!("condition on `{}` must not carry a value", condition.column),
+                ));
+            }
+            (Some(expression), arity) => {
+                let resolved = self.check_expression(
+                    &node.id,
+                    Some(condition.id.clone()),
+                    None,
+                    expression,
+                    ExpressionKind::Standard,
+                    scope,
+                );
+
+                let is_list = matches!(resolved, VariableType::Array(_));
+                let is_any = matches!(resolved, VariableType::Any);
+
+                if arity.is_none() && !is_list && !is_any {
+                    self.diagnostics.push(Diagnostic::error(
+                        DiagnosticCode::TypeMismatch,
+                        location,
+                        format!("operator requires an array, got `{resolved}`"),
+                    ));
+                } else if arity.is_some() && is_list {
+                    self.diagnostics.push(Diagnostic::error(
+                        DiagnosticCode::TypeMismatch,
+                        location,
+                        format!("operator requires a scalar, got `{resolved}`"),
+                    ));
+                }
+            }
+        }
+    }
+
+    /// Row shape from the projected columns. Columns are `any` because the engine has no
+    /// schema catalog for the source; naming them still types the row's *keys*.
+    fn row_type(columns: &[Arc<str>]) -> VariableType {
+        if columns.is_empty() {
+            return VariableType::Any;
+        }
+
+        let mut fields: HashMap<Rc<str>, VariableType> = HashMap::default();
+        for column in columns {
+            let key = column.rsplit_once('.').map(|(_, c)| c).unwrap_or(column);
+            fields.insert(Rc::from(key), VariableType::Any);
+        }
+
+        VariableType::Object(Rc::new(std::cell::RefCell::new(fields)))
+    }
+
+    fn select_output(result: &DatabaseResultShape, columns: &[Arc<str>]) -> VariableType {
+        match result {
+            DatabaseResultShape::Rows => VariableType::Array(Rc::new(Self::row_type(columns))),
+            DatabaseResultShape::First => VariableType::Nullable(Rc::new(Self::row_type(columns))),
+            DatabaseResultShape::Scalar => VariableType::Nullable(Rc::new(VariableType::Any)),
+            DatabaseResultShape::Exists => VariableType::Bool,
+            DatabaseResultShape::Count => VariableType::Number,
+        }
+    }
+
+    fn raw_output(result: &DatabaseResultShape) -> VariableType {
+        match result {
+            DatabaseResultShape::Exists => VariableType::Bool,
+            DatabaseResultShape::Count => VariableType::Number,
+            _ => VariableType::Any,
+        }
     }
 
     fn check_function(
@@ -2004,6 +2224,54 @@ impl<'a> GraphAnalyzer<'a> {
             }
             DecisionNodeKind::DecisionNode { content } => {
                 push_input_field(&content.transform_attributes);
+            }
+            DecisionNodeKind::DatabaseNode { content } => {
+                push_input_field(&content.transform_attributes);
+                if let DatabaseSource::Expression { expression } = &content.source {
+                    sites.push(GraphExpressionSite {
+                        target: CursorTarget::TransformInput,
+                        expression_id: None,
+                        source: expression.clone(),
+                        kind: ExpressionKind::Standard,
+                    });
+                }
+                for relation in content.relations.iter() {
+                    sites.push(GraphExpressionSite {
+                        target: CursorTarget::TransformInput,
+                        expression_id: None,
+                        source: relation.rows.clone(),
+                        kind: ExpressionKind::Standard,
+                    });
+                }
+                match &content.query {
+                    DatabaseQuery::Select(select) => {
+                        for condition in select.conditions.iter().flat_map(|p| p.conditions()) {
+                            let Some(value) = &condition.value else {
+                                continue;
+                            };
+                            sites.push(GraphExpressionSite {
+                                target: CursorTarget::Expression {
+                                    id: condition.id.clone(),
+                                },
+                                expression_id: Some(condition.id.clone()),
+                                source: value.clone(),
+                                kind: ExpressionKind::Standard,
+                            });
+                        }
+                    }
+                    DatabaseQuery::Raw(raw) => {
+                        for parameter in raw.parameters.iter() {
+                            sites.push(GraphExpressionSite {
+                                target: CursorTarget::Expression {
+                                    id: parameter.id.clone(),
+                                },
+                                expression_id: Some(parameter.id.clone()),
+                                source: parameter.value.clone(),
+                                kind: ExpressionKind::Standard,
+                            });
+                        }
+                    }
+                }
             }
             _ => {}
         }

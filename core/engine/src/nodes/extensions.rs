@@ -1,5 +1,6 @@
 use crate::loader::{DynamicLoader, NoopLoader};
 use crate::nodes::custom::{DynamicCustomNode, NoopCustomNode};
+use crate::nodes::database::handler::DynamicDatabaseHandler;
 use crate::nodes::decision_table::index::TableIndex;
 use crate::nodes::function::http_handler::DynamicHttpHandler;
 use crate::nodes::function::v2::function::{Function, FunctionConfig};
@@ -20,6 +21,7 @@ pub struct NodeHandlerExtensions {
     pub(crate) loader: DynamicLoader,
     pub(crate) custom_node: DynamicCustomNode,
     pub(crate) http_handler: DynamicHttpHandler,
+    pub(crate) database_handler: DynamicDatabaseHandler,
     pub(crate) compiled_cache: Option<Arc<OpcodeCache>>,
     pub(crate) stripped_functions: Option<Arc<ahash::HashMap<Arc<str>, Arc<str>>>>,
     pub(crate) dt_indexes: Option<Arc<ahash::HashMap<Arc<str>, TableIndex>>>,
@@ -37,6 +39,7 @@ impl Default for NodeHandlerExtensions {
             stripped_functions: None,
             dt_indexes: None,
             http_handler: None,
+            database_handler: None,
         }
     }
 }
@@ -55,6 +58,7 @@ impl NodeHandlerExtensions {
                             loader: self.loader.clone(),
                             custom_node: self.custom_node.clone(),
                             http_handler: self.http_handler.clone(),
+                            database_handler: self.database_handler.clone(),
                         }),
                     ]),
                 })
@@ -78,5 +82,9 @@ impl NodeHandlerExtensions {
 
     pub fn http_handler(&self) -> &DynamicHttpHandler {
         &self.http_handler
+    }
+
+    pub fn database_handler(&self) -> &DynamicDatabaseHandler {
+        &self.database_handler
     }
 }

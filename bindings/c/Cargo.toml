@@ -16,6 +16,7 @@ tokio-util = { workspace = true, features = ["rt"] }
 zen-engine = { package = "phenixrizen-zen-engine", path = "../../core/engine", features = ["arbitrary_precision"] }
 zen-expression = { package = "phenixrizen-zen-expression", path = "../../core/expression", features = ["arbitrary_precision"] }
 zen-tmpl = { package = "phenixrizen-zen-tmpl", path = "../../core/template" }
+zen-database-sqlite = { package = "phenixrizen-zen-database-sqlite", path = "../../core/database-sqlite", features = ["arbitrary_precision"], optional = true }
 
 [lib]
 crate-type = ["staticlib"]
@@ -26,3 +27,6 @@ cbindgen = "0.28"
 [features]
 default = ["go"]
 go = []
+# Links the pure-Rust SQLite driver in, so a host registers it once at startup and every
+# databaseNode query runs in-process with no per-query crossing back over the FFI.
+sqlite = ["dep:zen-database-sqlite"]

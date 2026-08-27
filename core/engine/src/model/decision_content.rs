@@ -8,7 +8,10 @@ use ahash::{HashMap, HashMapExt};
 use serde::{Deserialize, Deserializer, Serialize};
 use std::sync::Arc;
 use zen_expression::{ExpressionKind, Isolate, OpcodeCache};
-use zen_types::decision::{DecisionEdge, DecisionNode, DecisionNodeKind, FunctionNodeContent};
+use zen_types::decision::{
+    DatabaseQuery, DatabaseSource, DecisionEdge, DecisionNode, DecisionNodeKind,
+    FunctionNodeContent,
+};
 
 #[derive(Clone, Debug, Serialize)]
 #[serde(untagged)]
@@ -107,6 +110,13 @@ pub struct GraphContent {
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub imports: Vec<Arc<str>>,
 
+    /// Decision-level constants, exposed to every node as `$params`.
+    ///
+    /// Unlike evaluation input, these travel with the decision document, so a policy and the
+    /// constants it depends on cannot drift apart.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub params: Option<Arc<serde_json::Value>>,
+
     #[serde(skip)]
     pub compiled_cache: Option<Arc<OpcodeCache>>,
 
@@ -167,6 +177,35 @@ impl GraphContent {
                             };
 
                             sources.push((rule_value.clone(), ExpressionKind::Standard));
+                        }
+                    }
+                }
+                DecisionNodeKind::DatabaseNode { content } => {
+                    if let DatabaseSource::Expression { expression } = &content.source {
+                        sources.push((expression.clone(), ExpressionKind::Standard));
+                    }
+
+                    for relation in content.relations.iter() {
+                        sources.push((relation.rows.clone(), ExpressionKind::Standard));
+                        for column in relation.columns.iter() {
+                            sources.push((column.value.clone(), ExpressionKind::Standard));
+                        }
+                    }
+
+                    match &content.query {
+                        DatabaseQuery::Select(select) => {
+                            for predicate in select.conditions.iter() {
+                                for condition in predicate.conditions() {
+                                    if let Some(value) = &condition.value {
+                                        sources.push((value.clone(), ExpressionKind::Standard));
+                                    }
+                                }
+                            }
+                        }
+                        DatabaseQuery::Raw(raw) => {
+                            for parameter in raw.parameters.iter() {
+                                sources.push((parameter.value.clone(), ExpressionKind::Standard));
+                            }
                         }
                     }
                 }

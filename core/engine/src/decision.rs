@@ -3,6 +3,7 @@ use crate::engine::{EvaluationOptions, EvaluationSerializedOptions, EvaluationTr
 use crate::loader::{DynamicLoader, NoopLoader};
 use crate::model::GraphContent;
 use crate::nodes::custom::{DynamicCustomNode, NoopCustomNode};
+use crate::nodes::database::handler::DynamicDatabaseHandler;
 use crate::nodes::function::http_handler::DynamicHttpHandler;
 use crate::nodes::NodeHandlerExtensions;
 use crate::{DecisionGraphValidationError, EvaluationError};
@@ -18,6 +19,7 @@ pub struct Decision {
     loader: DynamicLoader,
     adapter: DynamicCustomNode,
     http_handler: DynamicHttpHandler,
+    database_handler: DynamicDatabaseHandler,
 }
 
 impl From<GraphContent> for Decision {
@@ -27,6 +29,7 @@ impl From<GraphContent> for Decision {
             loader: Arc::new(NoopLoader::default()),
             adapter: Arc::new(NoopCustomNode::default()),
             http_handler: None,
+            database_handler: None,
         }
     }
 }
@@ -38,6 +41,7 @@ impl From<Arc<GraphContent>> for Decision {
             loader: Arc::new(NoopLoader::default()),
             adapter: Arc::new(NoopCustomNode::default()),
             http_handler: None,
+            database_handler: None,
         }
     }
 }
@@ -55,6 +59,11 @@ impl Decision {
 
     pub fn with_http_handler(mut self, http_handler: DynamicHttpHandler) -> Self {
         self.http_handler = http_handler;
+        self
+    }
+
+    pub fn with_database_handler(mut self, database_handler: DynamicDatabaseHandler) -> Self {
+        self.database_handler = database_handler;
         self
     }
 
@@ -81,6 +90,7 @@ impl Decision {
                 loader: self.loader.clone(),
                 custom_node: self.adapter.clone(),
                 http_handler: self.http_handler.clone(),
+                database_handler: self.database_handler.clone(),
                 compiled_cache: self.content.compiled_cache.clone(),
                 dt_indexes: self.content.dt_indexes.clone(),
                 stripped_functions: self.content.stripped_functions.clone(),

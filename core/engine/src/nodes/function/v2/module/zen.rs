@@ -1,6 +1,7 @@
 use crate::decision_graph::graph::{DecisionGraph, DecisionGraphConfig};
 use crate::loader::DynamicLoader;
 use crate::nodes::custom::DynamicCustomNode;
+use crate::nodes::database::handler::DynamicDatabaseHandler;
 use crate::nodes::function::v2::error::{FunctionResult, ResultExt};
 use crate::nodes::function::v2::listener::{RuntimeEvent, RuntimeListener};
 use crate::nodes::function::v2::module::export_default;
@@ -18,6 +19,7 @@ pub(crate) struct ZenListener {
     pub loader: DynamicLoader,
     pub custom_node: DynamicCustomNode,
     pub http_handler: DynamicHttpHandler,
+    pub database_handler: DynamicDatabaseHandler,
 }
 
 impl RuntimeListener for ZenListener {
@@ -29,6 +31,7 @@ impl RuntimeListener for ZenListener {
         let loader = self.loader.clone();
         let custom_node = self.custom_node.clone();
         let http_handler = self.http_handler.clone();
+        let database_handler = self.database_handler.clone();
 
         Box::pin(async move {
             if event != RuntimeEvent::Startup {
@@ -46,6 +49,7 @@ impl RuntimeListener for ZenListener {
                             let loader = loader.clone();
                             let custom_node = custom_node.clone();
                             let http_handler = http_handler.clone();
+                            let database_handler = database_handler.clone();
 
                             async move {
                                 let config: Object = ctx.globals().get("config").or_throw(&ctx)?;
@@ -75,6 +79,7 @@ impl RuntimeListener for ZenListener {
                                         loader: loader.clone(),
                                         custom_node: custom_node.clone(),
                                         http_handler: http_handler.clone(),
+                                        database_handler: database_handler.clone(),
                                         ..Default::default()
                                     },
                                 })

@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use zen_expression::variable::VariableType;
-use zen_types::decision::{DecisionNode, DecisionNodeKind, DecisionTableContent};
+use zen_types::decision::{DatabaseQuery, DecisionNode, DecisionNodeKind, DecisionTableContent};
 
 use crate::policy::blocks::IntelliSenseSource;
 use crate::policy::queries::scope::VariableTypeScope;
@@ -66,6 +66,29 @@ impl Db {
                     &node_analysis.nodes_scope,
                 );
                 Some((statement.condition.clone(), ExpressionKind::Standard, scope))
+            }
+            DecisionNodeKind::DatabaseNode { content } => {
+                let CursorTarget::Expression { id } = &cursor.target else {
+                    return None;
+                };
+                let scope = GraphAnalyzer::scope_with_nodes(
+                    &node_analysis.handler_input,
+                    &node_analysis.nodes_scope,
+                );
+                let source = match &content.query {
+                    DatabaseQuery::Select(select) => select
+                        .conditions
+                        .iter()
+                        .flat_map(|predicate| predicate.conditions())
+                        .find(|condition| condition.id == *id)
+                        .and_then(|condition| condition.value.clone())?,
+                    DatabaseQuery::Raw(raw) => raw
+                        .parameters
+                        .iter()
+                        .find(|parameter| parameter.id == *id)
+                        .map(|parameter| parameter.value.clone())?,
+                };
+                Some((source, ExpressionKind::Standard, scope))
             }
             DecisionNodeKind::DecisionTableNode { content } => {
                 self.resolve_in_table(content, node_analysis, cursor)

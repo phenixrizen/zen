@@ -186,3 +186,20 @@ struct ZenEngineStruct *zen_engine_new_golang(const uintptr_t *maybe_loader,
  */
 struct ZenResult_ZenEngineStruct zen_engine_new_golang_with_loader_config(struct ZenEngineLoaderConfig config,
                                                                           const uintptr_t *maybe_custom_node);
+
+/**
+ * Creates a DecisionEngine with the built-in SQLite driver registered, for `databaseNode`.
+ *
+ * `sqlite_config` is JSON, e.g. `{"root":"/catalog"}` or
+ * `{"sources":{"catalog":"/catalog/catalog.db"},"allowRaw":true}`.
+ *
+ * Registration happens once, at startup. After that every `databaseNode` query is executed in
+ * Rust against the reference data directly — unlike a custom node, nothing crosses back into Go
+ * per lookup. Caller is responsible for freeing the engine.
+ *
+ * Only present when zen-ffi is built with the `sqlite` feature; calling it otherwise is a link
+ * error, since the driver is not compiled in.
+ */
+struct ZenResult_ZenEngineStruct zen_engine_new_golang_with_sqlite(const uintptr_t *maybe_loader,
+                                                                   const uintptr_t *maybe_custom_node,
+                                                                   const char *sqlite_config);

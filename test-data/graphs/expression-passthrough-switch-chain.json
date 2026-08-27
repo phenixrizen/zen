@@ -1,0 +1,124 @@
+{
+  "tests": [
+    {
+      "input": {
+        "clue": { "code": 11000 },
+        "ocls": [
+          { "seq": 1, "sameClaim": true,  "samePatient": true,  "sameDate": true,  "code": 11000 },
+          { "seq": 2, "sameClaim": false, "samePatient": true,  "sameDate": true,  "code": 11000 },
+          { "seq": 3, "sameClaim": false, "samePatient": true,  "sameDate": false, "code": 11000 },
+          { "seq": 4, "sameClaim": false, "samePatient": true,  "sameDate": true,  "code": 99213 },
+          { "seq": 5, "sameClaim": false, "samePatient": false, "sameDate": true,  "code": 11000 }
+        ]
+      },
+      "output": {
+        "decision": "SURGERY_MATCH",
+        "nOrig": 5,
+        "nPat": 3,
+        "nDos": 2,
+        "nSurg": 1,
+        "surgSeqs": [2]
+      }
+    },
+    {
+      "input": {
+        "clue": { "code": 11000 },
+        "ocls": [
+          { "seq": 1, "sameClaim": false, "samePatient": true, "sameDate": true, "code": 99213 }
+        ]
+      },
+      "output": { "decision": "NO_SURGERY", "nPat": 1, "nDos": 1, "nSurg": 0 }
+    },
+    {
+      "input": {
+        "clue": { "code": 11000 },
+        "ocls": [
+          { "seq": 1, "sameClaim": true, "samePatient": true, "sameDate": true, "code": 11000 }
+        ]
+      },
+      "output": { "decision": "NO_PATIENT_MATCH", "nPat": 0, "nOrig": 1 }
+    }
+  ],
+  "nodes": [
+    { "id": "input", "name": "Claim", "type": "inputNode", "content": { "schema": "" } },
+
+    { "id": "ex_pat", "name": "narrow to same patient", "type": "expressionNode",
+      "content": { "expressions": [
+          { "id": "e_pat", "key": "oclsPat", "value": "filter(ocls, not #.sameClaim and #.samePatient)" } ],
+        "passThrough": true, "inputField": null, "outputPath": null, "executionMode": "single" } },
+
+    { "id": "sw_pat", "name": "any same-patient OCL", "type": "switchNode",
+      "content": { "hitPolicy": "first", "statements": [
+          { "id": "s_pat_y", "condition": "len(oclsPat) > 0", "isDefault": false },
+          { "id": "s_pat_n", "condition": "", "isDefault": true } ] } },
+
+    { "id": "ex_dos", "name": "narrow to same date", "type": "expressionNode",
+      "content": { "expressions": [
+          { "id": "e_dos", "key": "oclsDos", "value": "filter(oclsPat, #.sameDate)" } ],
+        "passThrough": true, "inputField": null, "outputPath": null, "executionMode": "single" } },
+
+    { "id": "sw_dos", "name": "any same-date OCL", "type": "switchNode",
+      "content": { "hitPolicy": "first", "statements": [
+          { "id": "s_dos_y", "condition": "len(oclsDos) > 0", "isDefault": false },
+          { "id": "s_dos_n", "condition": "", "isDefault": true } ] } },
+
+    { "id": "ex_surg", "name": "narrow to surgery range", "type": "expressionNode",
+      "content": { "expressions": [
+          { "id": "e_surg", "key": "oclsSurg", "value": "filter(oclsDos, #.code >= 10000 and #.code <= 69999)" } ],
+        "passThrough": true, "inputField": null, "outputPath": null, "executionMode": "single" } },
+
+    { "id": "sw_surg", "name": "any surgery OCL", "type": "switchNode",
+      "content": { "hitPolicy": "first", "statements": [
+          { "id": "s_surg_y", "condition": "len(oclsSurg) > 0", "isDefault": false },
+          { "id": "s_surg_n", "condition": "", "isDefault": true } ] } },
+
+    { "id": "leaf_surg", "name": "surgery match", "type": "expressionNode",
+      "content": { "expressions": [
+          { "id": "l1", "key": "decision", "value": "'SURGERY_MATCH'" },
+          { "id": "l2", "key": "nOrig",    "value": "len(ocls)" },
+          { "id": "l3", "key": "nPat",     "value": "len(oclsPat)" },
+          { "id": "l4", "key": "nDos",     "value": "len(oclsDos)" },
+          { "id": "l5", "key": "nSurg",    "value": "len(oclsSurg)" },
+          { "id": "l6", "key": "surgSeqs", "value": "map(oclsSurg, #.seq)" } ],
+        "passThrough": false, "inputField": null, "outputPath": null, "executionMode": "single" } },
+
+    { "id": "leaf_nosurg", "name": "no surgery", "type": "expressionNode",
+      "content": { "expressions": [
+          { "id": "n1", "key": "decision", "value": "'NO_SURGERY'" },
+          { "id": "n2", "key": "nPat",  "value": "len(oclsPat)" },
+          { "id": "n3", "key": "nDos",  "value": "len(oclsDos)" },
+          { "id": "n4", "key": "nSurg", "value": "len(oclsSurg)" } ],
+        "passThrough": false, "inputField": null, "outputPath": null, "executionMode": "single" } },
+
+    { "id": "leaf_nodos", "name": "no same-date", "type": "expressionNode",
+      "content": { "expressions": [
+          { "id": "d1", "key": "decision", "value": "'NO_DATE_MATCH'" },
+          { "id": "d2", "key": "nPat", "value": "len(oclsPat)" } ],
+        "passThrough": false, "inputField": null, "outputPath": null, "executionMode": "single" } },
+
+    { "id": "leaf_nopat", "name": "no patient match", "type": "expressionNode",
+      "content": { "expressions": [
+          { "id": "p1", "key": "decision", "value": "'NO_PATIENT_MATCH'" },
+          { "id": "p2", "key": "nPat",   "value": "len(oclsPat)" },
+          { "id": "p3", "key": "nOrig",  "value": "len(ocls)" } ],
+        "passThrough": false, "inputField": null, "outputPath": null, "executionMode": "single" } },
+
+    { "id": "output", "name": "Insight", "type": "outputNode" }
+  ],
+  "edges": [
+    { "id": "e1",  "sourceId": "input",       "targetId": "ex_pat",      "type": "edge" },
+    { "id": "e2",  "sourceId": "ex_pat",      "targetId": "sw_pat",      "type": "edge" },
+    { "id": "e3",  "sourceId": "sw_pat",      "targetId": "ex_dos",      "sourceHandle": "s_pat_y", "type": "edge" },
+    { "id": "e4",  "sourceId": "sw_pat",      "targetId": "leaf_nopat",  "sourceHandle": "s_pat_n", "type": "edge" },
+    { "id": "e5",  "sourceId": "ex_dos",      "targetId": "sw_dos",      "type": "edge" },
+    { "id": "e6",  "sourceId": "sw_dos",      "targetId": "ex_surg",     "sourceHandle": "s_dos_y", "type": "edge" },
+    { "id": "e7",  "sourceId": "sw_dos",      "targetId": "leaf_nodos",  "sourceHandle": "s_dos_n", "type": "edge" },
+    { "id": "e8",  "sourceId": "ex_surg",     "targetId": "sw_surg",     "type": "edge" },
+    { "id": "e9",  "sourceId": "sw_surg",     "targetId": "leaf_surg",   "sourceHandle": "s_surg_y", "type": "edge" },
+    { "id": "e10", "sourceId": "sw_surg",     "targetId": "leaf_nosurg", "sourceHandle": "s_surg_n", "type": "edge" },
+    { "id": "e11", "sourceId": "leaf_surg",   "targetId": "output", "type": "edge" },
+    { "id": "e12", "sourceId": "leaf_nosurg", "targetId": "output", "type": "edge" },
+    { "id": "e13", "sourceId": "leaf_nodos",  "targetId": "output", "type": "edge" },
+    { "id": "e14", "sourceId": "leaf_nopat",  "targetId": "output", "type": "edge" }
+  ]
+}

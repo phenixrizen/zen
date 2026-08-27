@@ -1,0 +1,83 @@
+---
+source: core/engine/tests/engine.rs
+expression: serialized_result
+---
+performance: "[perf]"
+result:
+  viaExpression: from-params
+  viaFunction:
+    "$serde_json::private::Number": "10"
+  viaSwitch: "yes"
+trace:
+  ex:
+    id: ex
+    input:
+      amount:
+        "$serde_json::private::Number": "25"
+    name: params in expression
+    order:
+      "$serde_json::private::Number": "2"
+    output:
+      viaExpression: from-params
+      viaSwitch: "yes"
+    performance: "[perf]"
+    traceData:
+      viaExpression:
+        result: from-params
+      viaSwitch:
+        result: "yes"
+  fn:
+    id: fn
+    input:
+      viaExpression: from-params
+      viaSwitch: "yes"
+    name: params in function v2
+    order:
+      "$serde_json::private::Number": "3"
+    output:
+      viaExpression: from-params
+      viaFunction:
+        "$serde_json::private::Number": "10"
+      viaSwitch: "yes"
+    performance: "[perf]"
+    traceData:
+      log: []
+  input:
+    id: input
+    input: ~
+    name: Request
+    order:
+      "$serde_json::private::Number": "0"
+    output:
+      amount:
+        "$serde_json::private::Number": "25"
+    performance: "[perf]"
+    traceData: ~
+  output:
+    id: output
+    input:
+      viaExpression: from-params
+      viaFunction:
+        "$serde_json::private::Number": "10"
+      viaSwitch: "yes"
+    name: Response
+    order:
+      "$serde_json::private::Number": "4"
+    output: ~
+    performance: "[perf]"
+    traceData: ~
+  sw:
+    id: sw
+    input:
+      amount:
+        "$serde_json::private::Number": "25"
+    name: params in switch
+    order:
+      "$serde_json::private::Number": "1"
+    output:
+      amount:
+        "$serde_json::private::Number": "25"
+    performance: "[perf]"
+    traceData:
+      statements:
+        - id: s_y

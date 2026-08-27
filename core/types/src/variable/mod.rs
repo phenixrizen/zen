@@ -65,6 +65,10 @@ impl Variable {
         Symbol::from_static("$nodes")
     }
 
+    pub fn params_key() -> Symbol {
+        Symbol::from_static("$params")
+    }
+
     pub fn key(name: &str) -> Symbol {
         Symbol::from(name)
     }

@@ -1,0 +1,199 @@
+//! How logical source names map to database files.
+
+use ahash::HashMap;
+use serde::Deserialize;
+use std::path::{Path, PathBuf};
+
+use crate::error::SqliteError;
+
+/// Wire form of [`SqliteConfig`], so a host that can only pass a string — a C or Go binding,
+/// an environment variable, a config file — can still configure the driver.
+///
+/// ```json
+/// { "root": "/catalog", "allowRaw": false, "maxConnections": 8 }
+/// { "sources": { "catalog": "/catalog/catalog.db" } }
+/// ```
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct ConfigDto {
+    /// Resolve `<root>/<name>.db`.
+    root: Option<PathBuf>,
+    /// Or name each source explicitly.
+    sources: Option<HashMap<String, PathBuf>>,
+    #[serde(default)]
+    allow_raw: bool,
+    max_connections: Option<usize>,
+}
+
+#[derive(Debug, Clone)]
+pub struct SqliteConfig {
+    sources: SourceResolution,
+    /// Maximum connections held per source. Defaults to the machine's parallelism.
+    pub max_connections: usize,
+    /// Whether `raw` queries are permitted. Off by default: a raw statement is opaque to static
+    /// analysis, so enabling it is a deliberate choice.
+    pub allow_raw: bool,
+    /// Per-connection page cache, in kibibytes (negative `cache_size` in SQLite terms).
+    pub cache_size_kib: u32,
+    /// Memory-mapped I/O size in bytes. Zero disables it.
+    pub mmap_size: u64,
+    /// Busy timeout in milliseconds.
+    pub busy_timeout_ms: u32,
+}
+
+#[derive(Debug, Clone)]
+enum SourceResolution {
+    /// Every source named explicitly. Nothing else is reachable.
+    Explicit(HashMap<String, PathBuf>),
+    /// `<root>/<name>.db`. Names are validated, so a name can never escape the root.
+    Root(PathBuf),
+}
+
+impl SqliteConfig {
+    /// Resolves `<root>/<name>.db`.
+    pub fn with_root(root: impl AsRef<Path>) -> Self {
+        Self::new(SourceResolution::Root(root.as_ref().to_path_buf()))
+    }
+
+    /// Resolves only the names given. Preferred when the set of databases is known.
+    pub fn with_sources<I, K, V>(sources: I) -> Self
+    where
+        I: IntoIterator<Item = (K, V)>,
+        K: Into<String>,
+        V: Into<PathBuf>,
+    {
+        let map = sources
+            .into_iter()
+            .map(|(k, v)| (k.into(), v.into()))
+            .collect();
+        Self::new(SourceResolution::Explicit(map))
+    }
+
+    fn new(sources: SourceResolution) -> Self {
+        Self {
+            sources,
+            max_connections: std::thread::available_parallelism()
+                .map(|n| n.get())
+                .unwrap_or(4),
+            allow_raw: false,
+            cache_size_kib: 65_536,
+            mmap_size: 268_435_456,
+            busy_timeout_ms: 5_000,
+        }
+    }
+
+    /// Builds a configuration from JSON. Either `root` or `sources` must be given.
+    pub fn from_json(json: &str) -> Result<Self, SqliteError> {
+        let dto: ConfigDto = serde_json::from_str(json)
+            .map_err(|e| SqliteError::query(format!("invalid sqlite config: {e}")))?;
+
+        let mut config = match (dto.root, dto.sources) {
+            (Some(root), None) => Self::with_root(root),
+            (None, Some(sources)) => Self::with_sources(sources),
+            (Some(_), Some(_)) => {
+                return Err(SqliteError::query(
+                    "sqlite config sets both `root` and `sources`; give exactly one",
+                ))
+            }
+            (None, None) => {
+                return Err(SqliteError::query(
+                    "sqlite config must set either `root` or `sources`",
+                ))
+            }
+        };
+
+        config.allow_raw = dto.allow_raw;
+        if let Some(max) = dto.max_connections {
+            config.max_connections = max.max(1);
+        }
+        Ok(config)
+    }
+
+    pub fn allow_raw(mut self, allow: bool) -> Self {
+        self.allow_raw = allow;
+        self
+    }
+
+    pub fn max_connections(mut self, max: usize) -> Self {
+        self.max_connections = max.max(1);
+        self
+    }
+
+    /// Maps a logical source name to a file.
+    ///
+    /// Names are restricted to `[A-Za-z_][A-Za-z0-9_]*`, so a name cannot contain a path
+    /// separator, a parent-directory segment, or a URI parameter.
+    pub(crate) fn resolve(&self, name: &str) -> Result<PathBuf, SqliteError> {
+        let safe = !name.is_empty()
+            && name.len() <= 63
+            && name
+                .chars()
+                .next()
+                .is_some_and(|c| c.is_ascii_alphabetic() || c == '_')
+            && name
+                .chars()
+                .skip(1)
+                .all(|c| c.is_ascii_alphanumeric() || c == '_');
+
+        if !safe {
+            return Err(SqliteError::Identifier(name.to_string()));
+        }
+
+        match &self.sources {
+            SourceResolution::Explicit(map) => map
+                .get(name)
+                .cloned()
+                .ok_or_else(|| SqliteError::UnknownSource(name.to_string())),
+            SourceResolution::Root(root) => Ok(root.join(format!("{name}.db"))),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn names_cannot_escape_the_root() {
+        let config = SqliteConfig::with_root("/catalog");
+        for bad in ["../etc/passwd", "a/b", "a.db", "", "a b", "file:x?mode=rw"] {
+            assert!(
+                config.resolve(bad).is_err(),
+                "source name {bad:?} should be rejected"
+            );
+        }
+        assert_eq!(
+            config.resolve("fees_short").expect("valid name"),
+            PathBuf::from("/catalog/fees_short.db")
+        );
+    }
+
+    #[test]
+    fn json_config_round_trips() {
+        let c =
+            SqliteConfig::from_json(r#"{"root":"/catalog","allowRaw":true,"maxConnections":3}"#)
+                .expect("valid config");
+        assert!(c.allow_raw);
+        assert_eq!(c.max_connections, 3);
+        assert_eq!(
+            c.resolve("fees").expect("name"),
+            PathBuf::from("/catalog/fees.db")
+        );
+
+        let c = SqliteConfig::from_json(r#"{"sources":{"catalog":"/tmp/r.db"}}"#).expect("valid");
+        assert!(!c.allow_raw, "raw must stay off unless asked for");
+        assert!(c.resolve("catalog").is_ok());
+        assert!(c.resolve("other").is_err());
+
+        for bad in [r#"{}"#, r#"{"root":"/a","sources":{}}"#, "not json"] {
+            assert!(SqliteConfig::from_json(bad).is_err(), "should reject {bad}");
+        }
+    }
+
+    #[test]
+    fn explicit_sources_reject_unknown_names() {
+        let config = SqliteConfig::with_sources([("catalog", "/tmp/catalog.db")]);
+        assert!(config.resolve("catalog").is_ok());
+        assert!(config.resolve("other").is_err());
+    }
+}

@@ -11,3 +11,7 @@ index.node
 
 .npmrc
 yarn-error.log
+
+# Python tooling artifacts
+__pycache__/
+*.pyc

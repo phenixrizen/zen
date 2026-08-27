@@ -5,6 +5,7 @@ use crate::decision_graph::walker::{GraphWalker, NodeData, StableDiDecisionGraph
 use crate::engine::EvaluationTraceKind;
 use crate::model::{DecisionNodeKind, GraphContent};
 use crate::nodes::custom::CustomNodeHandler;
+use crate::nodes::database::DatabaseNodeHandler;
 use crate::nodes::decision::DecisionNodeHandler;
 use crate::nodes::decision_table::DecisionTableNodeHandler;
 use crate::nodes::expression::ExpressionNodeHandler;
@@ -35,6 +36,7 @@ pub struct DecisionGraph {
     graph: StableDiDecisionGraph,
     config: DecisionGraphConfig,
     parent_nodes: Option<Variable>,
+    params: Option<Variable>,
 }
 
 #[derive(Debug)]
@@ -49,11 +51,19 @@ pub struct DecisionGraphConfig {
 impl DecisionGraph {
     pub fn try_new(config: DecisionGraphConfig) -> Result<Self, DecisionGraphValidationError> {
         let graph = Self::build_graph(config.content.deref())?;
+        // Converted once per evaluation; every node shares the same handle.
+        let params = config
+            .content
+            .params
+            .as_ref()
+            .map(|value| Variable::from(value.as_ref()));
+
         Ok(Self {
             initial_graph: graph.clone(),
             graph,
             config,
             parent_nodes: None,
+            params,
         })
     }
 
@@ -147,6 +157,7 @@ impl DecisionGraph {
             name: node.name.clone(),
             input,
             nodes,
+            params: self.params.clone(),
             extensions: self.config.extensions.clone(),
             iteration: self.config.iteration,
             trace: match self.config.trace {
@@ -172,7 +183,7 @@ impl DecisionGraph {
             return Err(Box::new(EvaluationError::DepthLimitExceeded));
         }
 
-        let mut walker = GraphWalker::new(&self.graph);
+        let mut walker = GraphWalker::new(&self.graph, self.params.clone());
         let mut tracer = NodeTracer::new(self.config.trace);
 
         while let Some(nid) = walker.next(&mut self.graph, tracer.trace_callback()) {
@@ -237,6 +248,9 @@ impl DecisionGraph {
                 }
                 DecisionNodeKind::CustomNode { content } => {
                     handle_node(base_ctx, content.clone(), CustomNodeHandler).await
+                }
+                DecisionNodeKind::DatabaseNode { content } => {
+                    handle_node(base_ctx, content.clone(), DatabaseNodeHandler).await
                 }
             };
 
