@@ -1,15 +1,18 @@
 [package]
-authors = ["GoRules Team <bot@gorules.io>"]
-description = "Zen Template Language"
-name = "zen-tmpl"
+authors = ["Phenix Rizen <phenixrizen@gmail.com>", "GoRules Team <bot@gorules.io>"]
+description = "Zen Template Language (maintained fork of gorules/zen)"
+name = "phenixrizen-zen-tmpl"
 license = "MIT"
 version = "2.0.1"
 edition = "2021"
-repository = "https://github.com/gorules/zen.git"
-homepage = "https://gorules.io"
+repository = "https://github.com/phenixrizen/zen.git"
+homepage = "https://github.com/phenixrizen/zen"
+
+[lib]
+name = "zen_tmpl"
 
 [dependencies]
-zen-expression = { path = "../expression", version = "2.0.1" }
+zen-expression = { package = "phenixrizen-zen-expression", path = "../expression", version = "2.0.1" }
 thiserror = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }

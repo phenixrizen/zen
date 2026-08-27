@@ -20,26 +20,33 @@
 > | `TZ` is honoured | `local` timezone resolution respects the `TZ` environment variable instead of only `/etc/localtime`. |
 > | Exact fractional numbers | Fixes silent truncation of every non-integer value when `arbitrary_precision` is off. |
 >
-> The badges below point at the upstream packages. **This fork does not publish to crates.io, npm,
-> PyPI, or NuGet** — build it from source or depend on it by git reference.
+> ### Packages
 >
-> Not affiliated with or endorsed by GoRules. JDM remains GoRules' standard and the documentation
-> links below point at their docs. MIT licensed, same as upstream.
+> This fork publishes under its own names, so it never collides with upstream:
+>
+> | | package |
+> | --- | --- |
+> | Rust | `phenixrizen-zen-engine` (also `-expression`, `-types`, `-tmpl`, `-macros`) |
+> | Node.js | `@phenixrizen/zen-engine` |
+> | Python | `phenixrizen-zen-engine` |
+> | .NET | `PhenixRizen.ZenEngine` |
+>
+> The Rust crates keep their original library names, so `use zen_engine::…` is unchanged — only
+> the dependency line moves.
+>
+> Not affiliated with or endorsed by GoRules. MIT licensed, same as upstream, with the original
+> copyright retained in [LICENSE](LICENSE).
 
 # ZEN Engine
 
 **Business logic humans can read and machines can run.** One copy of your rules: the owner reads it, every system runs it.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![crates.io](https://img.shields.io/crates/v/zen-engine.svg)](https://crates.io/crates/zen-engine)
-[![npm](https://img.shields.io/npm/v/@gorules/zen-engine.svg)](https://www.npmjs.com/package/@gorules/zen-engine)
-[![PyPI](https://img.shields.io/pypi/v/zen-engine.svg)](https://pypi.org/project/zen-engine/)
-
-<img width="1280" alt="GoRules ZEN Engine" src=".github/images/hero.png">
+[![crates.io](https://img.shields.io/crates/v/phenixrizen-zen-engine.svg)](https://crates.io/crates/phenixrizen-zen-engine)
+[![npm](https://img.shields.io/npm/v/@phenixrizen/zen-engine.svg)](https://www.npmjs.com/package/@phenixrizen/zen-engine)
+[![PyPI](https://img.shields.io/pypi/v/phenixrizen-zen-engine.svg)](https://pypi.org/project/phenixrizen-zen-engine/)
 
 ZEN Engine is a cross-platform, open-source Business Rules Engine (BRE) written in **Rust**, with native bindings for **Node.js**, **Python**, **Go**, **Java**, **Kotlin** and **.NET**, plus iOS and Android packages. Decisions evaluate in microseconds, run identically on every platform, and are stored as portable JSON. Loading the JSON is up to you: file system, database or service call.
-
-Try it in the free [Online Editor](https://editor.gorules.io) with a built-in simulator, or embed the open-source React [JDM Editor](https://github.com/gorules/jdm-editor) in your own product.
 
 ## Rules that read like sentences
 
@@ -53,7 +60,7 @@ Model a decision on a visual canvas of decision tables, switches, expressions, f
 
 <img width="1280" alt="Graphs and documents" src=".github/images/graphs-docs.png">
 
-To go deeper on the decision model and each node type, see the [JDM documentation](https://gorules.io/docs/rules-engine/json-decision-model) and the [ZEN Expression Language](https://gorules.io/docs/rules-engine/expression-language/) reference.
+JDM is the JSON Decision Model: the document format this engine loads and evaluates. A JDM document is either a **graph** (decision tables, switches, expressions, functions and reusable sub-decisions on a canvas) or a **policy** (prose, typed data models and tables). Both compile to the same engine and return the same answers.
 
 ## What's new in 2.0
 
@@ -75,7 +82,7 @@ Version 2.0 is the first stable release of the new engine line:
 
 ```toml
 [dependencies]
-zen-engine = "2"
+phenixrizen-zen-engine = "2"
 ```
 
 ```rust
@@ -97,11 +104,11 @@ async fn evaluate() {
 ### Node.js
 
 ```bash
-npm i @gorules/zen-engine
+npm i @phenixrizen/zen-engine
 ```
 
 ```typescript
-import { ZenEngine } from '@gorules/zen-engine';
+import { ZenEngine } from '@phenixrizen/zen-engine';
 import fs from 'fs/promises';
 
 const content = await fs.readFile('./jdm_graph.json');
@@ -114,7 +121,7 @@ const result = await decision.evaluate({ input: 15 });
 ### Python
 
 ```bash
-pip install zen-engine
+pip install phenixrizen-zen-engine
 ```
 
 ```python
@@ -131,34 +138,13 @@ result = decision.evaluate({"input": 15})
 
 Full guides, including loaders for multi-decision graphs and batch evaluation:
 
-* **Node.js** - [GitHub](https://github.com/gorules/zen/blob/master/bindings/nodejs/README.md) | [Documentation](https://gorules.io/docs/developers/bre/engines/nodejs) | [npmjs](https://www.npmjs.com/package/@gorules/zen-engine)
-* **Python** - [GitHub](https://github.com/gorules/zen/blob/master/bindings/python/README.md) | [Documentation](https://gorules.io/docs/developers/bre/engines/python) | [pypi](https://pypi.org/project/zen-engine/)
-* **Go** - [GitHub](https://github.com/gorules/zen-go) | [Documentation](https://gorules.io/docs/developers/bre/engines/go)
-* **Java / Kotlin** - [GitHub](https://github.com/gorules/zen/blob/master/bindings/uniffi) | [Maven Central](https://mvnrepository.com/artifact/io.gorules/zen-engine)
-* **.NET** - [GitHub](https://github.com/gorules/zen/blob/master/bindings/uniffi) | [NuGet](https://www.nuget.org/packages/GoRules.ZenEngine)
-* **Rust (Core)** - [GitHub](https://github.com/gorules/zen) | [Documentation](https://gorules.io/docs/developers/bre/engines/rust) | [crates.io](https://crates.io/crates/zen-engine)
+* **Node.js** — [source](bindings/nodejs/README.md) | [npm](https://www.npmjs.com/package/@phenixrizen/zen-engine)
+* **Python** — [source](bindings/python/README.md) | [PyPI](https://pypi.org/project/phenixrizen-zen-engine/)
+* **Go** — [phenixrizen/zen-go](https://github.com/phenixrizen/zen-go)
+* **Java / Kotlin** — [source](bindings/uniffi)
+* **.NET** — [source](bindings/uniffi) | [NuGet](https://www.nuget.org/packages/PhenixRizen.ZenEngine)
+* **Rust (core)** — [source](core/engine) | [crates.io](https://crates.io/crates/phenixrizen-zen-engine)
 
-## The GoRules platform
-
-The engine is open at the core; [GoRules](https://gorules.io) is the platform around it. Managed cloud, self-hosted, or embedded with no network hop. SOC 2 Type II.
-
-### AI that builds rules, and stays reviewable
-
-An AI copilot and MCP server that edits rules, runs tests and explains decisions. It never deploys. Releases stay with your reviewers.
-
-<img width="800" alt="GoRules AI" src=".github/images/ai.png">
-
-### Promote like a release, run like a binary
-
-A release moves from testing to staging to production untouched. Approvals, instant rollback, and a paper trail for every change.
-
-<img width="800" alt="Governance" src=".github/images/governance.png">
-
-### Prove it before it ships
-
-Scenario suites run on every change, coverage is measured against decision paths, and every answer comes with a replayable trace.
-
-<img width="800" alt="Testing" src=".github/images/tests.png">
 
 ## Support matrix
 

@@ -1,12 +1,15 @@
 [package]
-authors = ["GoRules Team <bot@gorules.io>"]
-description = "Zen Expression Language"
-name = "zen-expression"
+authors = ["Phenix Rizen <phenixrizen@gmail.com>", "GoRules Team <bot@gorules.io>"]
+description = "Zen Expression Language (maintained fork of gorules/zen)"
+name = "phenixrizen-zen-expression"
 license = "MIT"
 version = "2.0.1"
 edition = "2021"
-repository = "https://github.com/gorules/zen.git"
-homepage = "https://gorules.io"
+repository = "https://github.com/phenixrizen/zen.git"
+homepage = "https://github.com/phenixrizen/zen"
+
+[lib]
+name = "zen_expression"
 
 [dependencies]
 smallvec = { version = "1", features = ["union"] }
@@ -31,8 +34,8 @@ nohash-hasher = { workspace = true }
 strsim = "0.11"
 iana-time-zone = "0.1"
 
-zen-macros = { path = "../macros", version = "2.0.1" }
-zen-types = { path = "../types", version = "2.0.1" }
+zen-macros = { package = "phenixrizen-zen-macros", path = "../macros", version = "2.0.1" }
+zen-types = { package = "phenixrizen-zen-types", path = "../types", version = "2.0.1" }
 
 [dev-dependencies]
 criterion = { workspace = true }

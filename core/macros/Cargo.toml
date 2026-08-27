@@ -1,13 +1,14 @@
 [package]
-name = "zen-macros"
-description = "Zen Helper Macros"
+name = "phenixrizen-zen-macros"
+description = "Zen Helper Macros (maintained fork of gorules/zen)"
 version = "2.0.1"
 edition = "2024"
 license = "MIT"
-repository = "https://github.com/gorules/zen.git"
-homepage = "https://gorules.io"
+repository = "https://github.com/phenixrizen/zen.git"
+homepage = "https://github.com/phenixrizen/zen"
 
 [lib]
+name = "zen_macros"
 proc-macro = true
 
 [dependencies]

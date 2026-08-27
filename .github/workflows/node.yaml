@@ -273,7 +273,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: release
     # Publishes only on the release-please GitHub Release for the nodejs component.
-    if: "github.ref_type == 'tag' && github.repository == 'gorules/zen'"
+    if: "github.ref_type == 'tag'"
     defaults:
       run:
         working-directory: ${{ env.WORKING_DIRECTORY }}

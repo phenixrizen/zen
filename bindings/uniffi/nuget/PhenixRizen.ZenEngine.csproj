@@ -2,14 +2,14 @@
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
-    <PackageId>GoRules.ZenEngine</PackageId>
-    <Authors>GoRules</Authors>
+    <PackageId>PhenixRizen.ZenEngine</PackageId>
+    <Authors>Phenix Rizen</Authors>
     <Company>GoRules</Company>
     <Description>ZEN Engine - Business Rules Engine for .NET. Execute JSON Decision Models (JDM) with native performance via Rust FFI bindings.</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageProjectUrl>https://gorules.io</PackageProjectUrl>
+    <PackageProjectUrl>https://github.com/phenixrizen/zen</PackageProjectUrl>
     <PackageIcon>icon.png</PackageIcon>
-    <RepositoryUrl>https://github.com/gorules/zen</RepositoryUrl>
+    <RepositoryUrl>https://github.com/phenixrizen/zen</RepositoryUrl>
     <PackageTags>rules-engine;business-rules;decision-engine;jdm;gorules</PackageTags>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>

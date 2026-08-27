@@ -97,9 +97,7 @@ jobs:
     name: Release
     runs-on: ubuntu-latest
     environment: release
-    # Fork guard: this job pushes built libraries into the gorules/zen-go
-    # repository. Forks build and test, but never publish.
-    if: "(github.ref_type == 'tag' || github.event_name == 'workflow_dispatch') && github.repository == 'gorules/zen'"
+    if: "(github.ref_type == 'tag' || github.event_name == 'workflow_dispatch')"
     needs:
       - build
       - copy-common
@@ -107,7 +105,7 @@ jobs:
       - name: Checkout zen-go
         uses: actions/checkout@v3
         with:
-          repository: gorules/zen-go
+          repository: phenixrizen/zen-go
           persist-credentials: false
           token: ${{ secrets.PAT }}
       - name: Download all artifacts
@@ -148,7 +146,7 @@ jobs:
       - name: Push changes
         uses: ad-m/github-push-action@master
         with:
-          repository: gorules/zen-go
+          repository: phenixrizen/zen-go
           github_token: ${{ secrets.PAT }}
           branch: ${{ env.BRANCH_NAME }}
       - name: Create PR

@@ -1,14 +1,15 @@
 [package]
-authors = ["GoRules Team <bot@gorules.io>"]
-description = "Business rules engine"
-name = "zen-engine"
+authors = ["Phenix Rizen <phenixrizen@gmail.com>", "GoRules Team <bot@gorules.io>"]
+description = "Business rules engine (maintained fork of gorules/zen)"
+name = "phenixrizen-zen-engine"
 license = "MIT"
 version = "2.0.1"
 edition = "2021"
-repository = "https://github.com/gorules/zen.git"
-homepage = "https://gorules.io"
+repository = "https://github.com/phenixrizen/zen.git"
+homepage = "https://github.com/phenixrizen/zen"
 
 [lib]
+name = "zen_engine"
 doctest = false
 
 [dependencies]
@@ -27,9 +28,9 @@ rust_decimal = { workspace = true, features = ["maths-nopanic"] }
 fixedbitset = "0.5"
 tokio = { workspace = true, features = ["sync", "time"] }
 rquickjs = { version = "0.10", features = ["macro", "loader", "rust-alloc", "futures", "either", "properties"] }
-zen-types = { path = "../types", version = "2.0.1" }
-zen-expression = { path = "../expression", version = "2.0.1" }
-zen-tmpl = { path = "../template", version = "2.0.1" }
+zen-types = { package = "phenixrizen-zen-types", path = "../types", version = "2.0.1" }
+zen-expression = { package = "phenixrizen-zen-expression", path = "../expression", version = "2.0.1" }
+zen-tmpl = { package = "phenixrizen-zen-tmpl", path = "../template", version = "2.0.1" }
 nohash-hasher = { workspace = true }
 downcast-rs = { version = "2.0", features = ["std", "sync"] }
 arc-swap = "1"

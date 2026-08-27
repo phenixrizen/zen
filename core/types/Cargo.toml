@@ -1,11 +1,14 @@
 [package]
-name = "zen-types"
-description = "Zen Core Types"
+name = "phenixrizen-zen-types"
+description = "Zen Core Types (maintained fork of gorules/zen)"
 version = "2.0.1"
 edition = "2024"
 license = "MIT"
-repository = "https://github.com/gorules/zen.git"
-homepage = "https://gorules.io"
+repository = "https://github.com/phenixrizen/zen.git"
+homepage = "https://github.com/phenixrizen/zen"
+
+[lib]
+name = "zen_types"
 
 [dependencies]
 ahash = { workspace = true }
