@@ -1,0 +1,83 @@
+name: Bug report
+description: Something evaluates or behaves incorrectly
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        A minimal decision graph plus its input is by far the most useful thing you can give us.
+        Without one, most evaluation bugs cannot be reproduced.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What you observed, and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: graph
+    attributes:
+      label: Decision graph
+      description: The smallest JDM graph that reproduces this.
+      render: json
+    validations:
+      required: true
+  - type: textarea
+    id: input
+    attributes:
+      label: Input
+      description: The context passed to the evaluation.
+      render: json
+    validations:
+      required: true
+  - type: textarea
+    id: output
+    attributes:
+      label: Actual output
+      description: What came back, including any error.
+      render: json
+    validations:
+      required: false
+  - type: dropdown
+    id: binding
+    attributes:
+      label: How are you calling it?
+      options:
+        - Rust crate
+        - Go
+        - NodeJS
+        - Python
+        - C / FFI
+        - UniFFI
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+      placeholder: "v1.0.0-beta.12, or a commit SHA"
+    validations:
+      required: true
+  - type: input
+    id: features
+    attributes:
+      label: Cargo features enabled
+      description: Numeric behaviour differs with `arbitrary_precision`, so this matters for anything involving numbers.
+      placeholder: "default, or arbitrary_precision"
+    validations:
+      required: false
+  - type: input
+    id: platform
+    attributes:
+      label: Platform
+      placeholder: "linux-x64-gnu, macOS arm64, ..."
+    validations:
+      required: false
+  - type: checkboxes
+    id: upstream
+    attributes:
+      label: Upstream
+      options:
+        - label: I checked whether this also reproduces on upstream `gorules/zen`
+          required: false

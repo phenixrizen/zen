@@ -65,7 +65,7 @@ jobs:
     name: Cargo Release
     runs-on: ubuntu-latest
     environment: release
-    if: "github.ref_type == 'tag'"
+    if: "github.ref_type == 'tag' && github.repository == 'gorules/zen'"
     needs:
       - test
       - fmt

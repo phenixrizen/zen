@@ -36,6 +36,9 @@ jobs:
   release-please:
     name: Release Please
     runs-on: ubuntu-latest
+    # Fork guard: release automation cuts tags that drive the publish jobs.
+    # Forks should not cut releases under the upstream version line.
+    if: "github.repository == 'gorules/zen'"
     steps:
       - uses: googleapis/release-please-action@v5
         id: release

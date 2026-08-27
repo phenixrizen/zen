@@ -97,7 +97,9 @@ jobs:
     name: Release
     runs-on: ubuntu-latest
     environment: release
-    if: "github.ref_type == 'tag' || github.event_name == 'workflow_dispatch'"
+    # Fork guard: this job pushes built libraries into the gorules/zen-go
+    # repository. Forks build and test, but never publish.
+    if: "(github.ref_type == 'tag' || github.event_name == 'workflow_dispatch') && github.repository == 'gorules/zen'"
     needs:
       - build
       - copy-common

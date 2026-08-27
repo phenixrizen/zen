@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Bug in upstream ZEN, not specific to this fork
+    url: https://github.com/gorules/zen/issues
+    about: If it reproduces on gorules/zen, report it there too so both projects benefit.
+  - name: Security vulnerability
+    url: https://github.com/phenixrizen/zen/security/advisories/new
+    about: Report privately through a security advisory. Please do not open a public issue.
+  - name: JDM standard and documentation
+    url: https://docs.gorules.io
+    about: The JDM standard is GoRules'. Their documentation is the reference.

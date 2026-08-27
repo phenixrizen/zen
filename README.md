@@ -1,3 +1,31 @@
+> [!NOTE]
+> ## This is a maintained fork
+>
+> **`phenixrizen/zen` is a community-maintained fork of [`gorules/zen`](https://github.com/gorules/zen), maintained by Phenix Rizen (Nathan Rockhold).**
+>
+> It exists because upstream states it cannot accept code contributions, and submitted fixes go
+> unreviewed in practice — including a straightforward timezone defect fix with a regression test,
+> which has sat without a response.
+>
+> This fork tracks upstream `master` and **does accept contributions**. See
+> [CONTRIBUTING.md](CONTRIBUTING.md).
+>
+> ### What this fork adds
+>
+> | addition | what it does |
+> | --- | --- |
+> | `databaseNode` + `DatabaseHandler` | A first-class node for looking reference data up from a decision graph, with a host extension point. Values are always bound, never interpolated. |
+> | `zen-database-sqlite` | A **pure-Rust** SQLite handler built on [Turso](https://github.com/tursodatabase/turso) — no C, no vendored amalgamation, no `cc` in your build. |
+> | Decision-level `$params` | Static parameters supplied per decision and reachable from switch, expression, and function nodes. |
+> | `TZ` is honoured | `local` timezone resolution respects the `TZ` environment variable instead of only `/etc/localtime`. |
+> | Exact fractional numbers | Fixes silent truncation of every non-integer value when `arbitrary_precision` is off. |
+>
+> The badges below point at the upstream packages. **This fork does not publish to crates.io, npm,
+> PyPI, or NuGet** — build it from source or depend on it by git reference.
+>
+> Not affiliated with or endorsed by GoRules. JDM remains GoRules' standard and the documentation
+> links below point at their docs. MIT licensed, same as upstream.
+
 # ZEN Engine
 
 **Business logic humans can read and machines can run.** One copy of your rules: the owner reads it, every system runs it.
@@ -150,7 +178,24 @@ Mobile: **Swift (iOS XCFramework)** and **Android (AAR)** packages are published
 
 ## Contribution
 
-The JDM standard is growing and we need to keep tight control over its development and roadmap, as a number of companies use GoRules ZEN Engine and GoRules BRMS. For this reason we can't accept code contributions at this moment, apart from help with documentation and additional tests.
+**Contributions are welcome here.** This fork exists partly because upstream cannot take them.
+
+Read [CONTRIBUTING.md](CONTRIBUTING.md) for the development setup and the full test gate. In short:
+
+```bash
+cargo fmt --all -- --check
+cargo test --workspace --all-features \
+  --exclude zen-ffi --exclude zen-nodejs --exclude zen-python --locked
+cargo test --workspace \
+  --exclude zen-ffi --exclude zen-nodejs --exclude zen-python --locked
+```
+
+Security issues should not go in a public issue — see [SECURITY.md](.github/SECURITY.md).
+
+A bug that also reproduces on upstream `gorules/zen` is worth reporting
+[there](https://github.com/gorules/zen/issues) as well, so both projects benefit.
+
+The JDM standard itself is GoRules'. This fork aims to stay compatible with it rather than diverge.
 
 ## License
 
