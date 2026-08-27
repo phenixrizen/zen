@@ -166,7 +166,8 @@ Mobile: **Swift (iOS XCFramework)** and **Android (AAR)** packages are published
 
 **Contributions are welcome here.** This fork exists partly because upstream cannot take them.
 
-Read [CONTRIBUTING.md](CONTRIBUTING.md) for the development setup and the full test gate. In short:
+Read [CONTRIBUTING.md](CONTRIBUTING.md) for the development setup and the full test gate, and
+[AGENTS.md](AGENTS.md) for the constraints that gate a release — binary size in particular. In short:
 
 ```bash
 cargo fmt --all -- --check
