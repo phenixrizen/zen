@@ -60,7 +60,7 @@ cargo check -p zen-engine --target wasm32-wasip1-threads --all-features
 - **Snapshot tests.** `cargo insta` review if you change engine output. A PR should not carry
   unexplained `.snap` changes.
 - **Tests that need reference data skip by default.** `zen-database-sqlite`'s differential suites
-  read `ZEN_REFDATA_DIR` and `ZEN_CORPUS_MANIFEST`. Unset means "no bundle available" and they
+  read `ZEN_CATALOG_DIR` and `ZEN_CORPUS_MANIFEST`. Unset means "no bundle available" and they
   skip. Never commit a `.db` fixture — build read-only fixtures at test time from a committed
   `.sql`.
 
@@ -72,7 +72,7 @@ the prefix determines the version bump.
 ```
 fix(expression): honour TZ when resolving the local timezone
 feat(engine): add database node and handler extension point
-test(database-sqlite): require an explicit refdata bundle path
+test(database-sqlite): require an explicit catalog bundle path
 ```
 
 Explain *why* in the body, not just what. A reviewer can read the diff; they cannot read your
