@@ -1,5 +1,27 @@
 # Changelog
 
+## [2.1.0](https://github.com/phenixrizen/zen/compare/zen-macros-v2.0.1...zen-macros-v2.1.0) (2026-08-27)
+
+
+### Features
+
+* compact trace ([#384](https://github.com/phenixrizen/zen/issues/384)) ([80fe402](https://github.com/phenixrizen/zen/commit/80fe4021c216d267bee388a1959a5ae29f279f0d))
+* expression static analysis ([#449](https://github.com/phenixrizen/zen/issues/449)) ([602d214](https://github.com/phenixrizen/zen/commit/602d214b9648964c032cdd2b414b0c40e22c6414))
+* publish under phenixrizen package names ([01d81d0](https://github.com/phenixrizen/zen/commit/01d81d07b8fa7687a73bb562ba38ff9e49cb787c))
+* refactor engine ([#390](https://github.com/phenixrizen/zen/issues/390)) ([9150982](https://github.com/phenixrizen/zen/commit/91509821be632bc7305648d2f6f4ce62f84b4c60))
+
+
+### Bug Fixes
+
+* add crate descriptions ([#388](https://github.com/phenixrizen/zen/issues/388)) ([a573ae0](https://github.com/phenixrizen/zen/commit/a573ae00b753fc0519971220fa8c25467a813dc7))
+* improve READMEs across bindings ([#516](https://github.com/phenixrizen/zen/issues/516)) ([692ca2f](https://github.com/phenixrizen/zen/commit/692ca2fe6b503a42da6b311dbefdf603a3ae5df4))
+* rust version bump ([#387](https://github.com/phenixrizen/zen/issues/387)) ([1e4135f](https://github.com/phenixrizen/zen/commit/1e4135f5fb665d21237054501ac6d671e1b55e64))
+
+
+### Performance
+
+* general performance improvements ([#500](https://github.com/phenixrizen/zen/issues/500)) ([fe43b4c](https://github.com/phenixrizen/zen/commit/fe43b4c1d71fb28c247ffb0ebd9e332d34f5f907))
+
 ## [2.0.1](https://github.com/gorules/zen/compare/zen-macros-v2.0.0...zen-macros-v2.0.1) (2026-08-22)
 
 

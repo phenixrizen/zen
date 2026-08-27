@@ -1,5 +1,41 @@
 # Changelog
 
+## [2.1.0](https://github.com/phenixrizen/zen/compare/zen-types-v2.0.1...zen-types-v2.1.0) (2026-08-27)
+
+
+### Features
+
+* compact trace ([#384](https://github.com/phenixrizen/zen/issues/384)) ([80fe402](https://github.com/phenixrizen/zen/commit/80fe4021c216d267bee388a1959a5ae29f279f0d))
+* configurable arbitrary precision ([#433](https://github.com/phenixrizen/zen/issues/433)) ([46688a4](https://github.com/phenixrizen/zen/commit/46688a4d4ce72f23db22b4397827b28529a5d71d))
+* **engine:** add database node and handler extension point ([6f9c1a8](https://github.com/phenixrizen/zen/commit/6f9c1a85e41b7858d6edfec459c5d799673e30f8))
+* **engine:** database node, decision params, and a pure-Rust SQLite handler ([26ef64c](https://github.com/phenixrizen/zen/commit/26ef64c9b72315db1f9b0b2138b1264a2d599079))
+* **engine:** support decision-level params ([5c9fd8d](https://github.com/phenixrizen/zen/commit/5c9fd8d0bacb1d8c5652098b8d19d18e2e2beb1e))
+* **engine:** support OR grouping in database node conditions ([691dd5e](https://github.com/phenixrizen/zen/commit/691dd5e55847a43db19cba2731fb4f634700a45e))
+* expression static analysis ([#449](https://github.com/phenixrizen/zen/issues/449)) ([602d214](https://github.com/phenixrizen/zen/commit/602d214b9648964c032cdd2b414b0c40e22c6414))
+* graph dt column collect ([#505](https://github.com/phenixrizen/zen/issues/505)) ([c615013](https://github.com/phenixrizen/zen/commit/c615013a2d02f871c4b7a7753c9bc8c826d45e78))
+* lazy load fn nodes ([#389](https://github.com/phenixrizen/zen/issues/389)) ([07040c8](https://github.com/phenixrizen/zen/commit/07040c8a9607032358c476dea8818f1df509f270))
+* policy table output type ([#481](https://github.com/phenixrizen/zen/issues/481)) ([9a11ae4](https://github.com/phenixrizen/zen/commit/9a11ae4f48f631564c44444edc1ec0bda6081dec))
+* precompile decision content ([#401](https://github.com/phenixrizen/zen/issues/401)) ([7bfebd9](https://github.com/phenixrizen/zen/commit/7bfebd90fed78d3250e25f92a4c971b71f850532))
+* publish under phenixrizen package names ([01d81d0](https://github.com/phenixrizen/zen/commit/01d81d07b8fa7687a73bb562ba38ff9e49cb787c))
+* refactor engine ([#390](https://github.com/phenixrizen/zen/issues/390)) ([9150982](https://github.com/phenixrizen/zen/commit/91509821be632bc7305648d2f6f4ce62f84b4c60))
+* workspace lints and type fixes ([#492](https://github.com/phenixrizen/zen/issues/492)) ([63b560c](https://github.com/phenixrizen/zen/commit/63b560c526887537e5764d5a0e62c47ab0c7e6a0))
+
+
+### Bug Fixes
+
+* add crate descriptions ([#388](https://github.com/phenixrizen/zen/issues/388)) ([a573ae0](https://github.com/phenixrizen/zen/commit/a573ae00b753fc0519971220fa8c25467a813dc7))
+* improve fn variable conversion performance ([#410](https://github.com/phenixrizen/zen/issues/410)) ([de25f98](https://github.com/phenixrizen/zen/commit/de25f98a7f606f5381e2a98a14c1adb9507144d9))
+* improve READMEs across bindings ([#516](https://github.com/phenixrizen/zen/issues/516)) ([692ca2f](https://github.com/phenixrizen/zen/commit/692ca2fe6b503a42da6b311dbefdf603a3ae5df4))
+* number out of range panics ([#506](https://github.com/phenixrizen/zen/issues/506)) ([1372274](https://github.com/phenixrizen/zen/commit/13722740a1c1af8b2c5b2bbf93536d46b95af812))
+* rust version bump ([#387](https://github.com/phenixrizen/zen/issues/387)) ([1e4135f](https://github.com/phenixrizen/zen/commit/1e4135f5fb665d21237054501ac6d671e1b55e64))
+* **types:** stop truncating fractional numbers when serializing ([f4f63e4](https://github.com/phenixrizen/zen/commit/f4f63e4d0705c81c7cd68771705081232c355d74))
+* **types:** stop truncating fractional numbers when serializing ([2aa08dc](https://github.com/phenixrizen/zen/commit/2aa08dc0801bd292fd15fd801dfa54b4d10ba316))
+
+
+### Performance
+
+* general performance improvements ([#500](https://github.com/phenixrizen/zen/issues/500)) ([fe43b4c](https://github.com/phenixrizen/zen/commit/fe43b4c1d71fb28c247ffb0ebd9e332d34f5f907))
+
 ## [2.0.1](https://github.com/gorules/zen/compare/zen-types-v2.0.0...zen-types-v2.0.1) (2026-08-22)
 
 

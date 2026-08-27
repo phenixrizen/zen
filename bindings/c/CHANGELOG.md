@@ -1,5 +1,32 @@
 # Changelog
 
+## [2.1.0](https://github.com/phenixrizen/zen/compare/go-v2.0.1...go-v2.1.0) (2026-08-27)
+
+
+### Features
+
+* compact trace ([#384](https://github.com/phenixrizen/zen/issues/384)) ([80fe402](https://github.com/phenixrizen/zen/commit/80fe4021c216d267bee388a1959a5ae29f279f0d))
+* configurable arbitrary precision ([#433](https://github.com/phenixrizen/zen/issues/433)) ([46688a4](https://github.com/phenixrizen/zen/commit/46688a4d4ce72f23db22b4397827b28529a5d71d))
+* custom node ([#138](https://github.com/phenixrizen/zen/issues/138)) ([daecf90](https://github.com/phenixrizen/zen/commit/daecf901e6576df0ddd9d24dbc2aed6774b4599f))
+* **engine:** database node, decision params, and a pure-Rust SQLite handler ([26ef64c](https://github.com/phenixrizen/zen/commit/26ef64c9b72315db1f9b0b2138b1264a2d599079))
+* expression chain ([#166](https://github.com/phenixrizen/zen/issues/166)) ([6271d8a](https://github.com/phenixrizen/zen/commit/6271d8ab1aa232d0f52c3eb1f513df62650f63ad))
+* **ffi:** register the SQLite driver from Go in one call ([344bef7](https://github.com/phenixrizen/zen/commit/344bef721bca049d3a10906eb9be60b184042c73))
+* function v2 ([#212](https://github.com/phenixrizen/zen/issues/212)) ([cc3d938](https://github.com/phenixrizen/zen/commit/cc3d938b2f21bda6b66e7c38b0cfc34df239a5c9))
+* implement new loaders across languages ([#487](https://github.com/phenixrizen/zen/issues/487)) ([1818371](https://github.com/phenixrizen/zen/commit/1818371c908730b73e69e058d71099dccb537eab))
+* native ffi ([#121](https://github.com/phenixrizen/zen/issues/121)) ([2fd7e96](https://github.com/phenixrizen/zen/commit/2fd7e96b42c3b91306a0202efe96b7cc1bef6551))
+* passthrough nodes ([#261](https://github.com/phenixrizen/zen/issues/261)) ([4781214](https://github.com/phenixrizen/zen/commit/47812143a031e92fedde3b406502f3dc0cfb9dbd))
+* policy engine ([#450](https://github.com/phenixrizen/zen/issues/450)) ([6c0ca51](https://github.com/phenixrizen/zen/commit/6c0ca513546dd8cb3664e6926da66f146d9726d9))
+* publish under phenixrizen package names ([01d81d0](https://github.com/phenixrizen/zen/commit/01d81d07b8fa7687a73bb562ba38ff9e49cb787c))
+* rc variable ([#246](https://github.com/phenixrizen/zen/issues/246)) ([9159816](https://github.com/phenixrizen/zen/commit/91598166ce912b8d8f53441d5e9fa8a02bf9855a))
+* refactor engine ([#390](https://github.com/phenixrizen/zen/issues/390)) ([9150982](https://github.com/phenixrizen/zen/commit/91509821be632bc7305648d2f6f4ce62f84b4c60))
+
+
+### Bug Fixes
+
+* go memory leak ([#141](https://github.com/phenixrizen/zen/issues/141)) ([82ff028](https://github.com/phenixrizen/zen/commit/82ff028e3ac7bfaea589c9f295ca2b7374a1ae18))
+* number out of range panics ([#506](https://github.com/phenixrizen/zen/issues/506)) ([1372274](https://github.com/phenixrizen/zen/commit/13722740a1c1af8b2c5b2bbf93536d46b95af812))
+* rename templates crate ([#140](https://github.com/phenixrizen/zen/issues/140)) ([ebba323](https://github.com/phenixrizen/zen/commit/ebba3233668779fa510a7d059c027eea43137929))
+
 ## [2.0.1](https://github.com/gorules/zen/compare/go-v2.0.0...go-v2.0.1) (2026-08-22)
 
 ## [2.0.0](https://github.com/gorules/zen/compare/go-v1.0.0-beta.13...go-v2.0.0) (2026-08-20)
