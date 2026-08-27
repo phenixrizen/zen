@@ -1,5 +1,32 @@
 # Changelog
 
+## [2.1.0](https://github.com/phenixrizen/zen/compare/zen-tmpl-v2.0.1...zen-tmpl-v2.1.0) (2026-08-27)
+
+
+### Features
+
+* configurable arbitrary precision ([#433](https://github.com/phenixrizen/zen/issues/433)) ([46688a4](https://github.com/phenixrizen/zen/commit/46688a4d4ce72f23db22b4397827b28529a5d71d))
+* custom node ([#138](https://github.com/phenixrizen/zen/issues/138)) ([daecf90](https://github.com/phenixrizen/zen/commit/daecf901e6576df0ddd9d24dbc2aed6774b4599f))
+* expression chain ([#166](https://github.com/phenixrizen/zen/issues/166)) ([6271d8a](https://github.com/phenixrizen/zen/commit/6271d8ab1aa232d0f52c3eb1f513df62650f63ad))
+* expression static analysis ([#449](https://github.com/phenixrizen/zen/issues/449)) ([602d214](https://github.com/phenixrizen/zen/commit/602d214b9648964c032cdd2b414b0c40e22c6414))
+* improve stack resiliency ([#357](https://github.com/phenixrizen/zen/issues/357)) ([173d7bc](https://github.com/phenixrizen/zen/commit/173d7bcb7956a4b4c66173d7cbec3e3a4d4386c4))
+* publish under phenixrizen package names ([01d81d0](https://github.com/phenixrizen/zen/commit/01d81d07b8fa7687a73bb562ba38ff9e49cb787c))
+* rc variable ([#246](https://github.com/phenixrizen/zen/issues/246)) ([9159816](https://github.com/phenixrizen/zen/commit/91598166ce912b8d8f53441d5e9fa8a02bf9855a))
+* wasm support ([#404](https://github.com/phenixrizen/zen/issues/404)) ([922a262](https://github.com/phenixrizen/zen/commit/922a262e989ea914e7ed3ccde52f27d31b6b2c39))
+
+
+### Bug Fixes
+
+* disable default features tmpl ([#362](https://github.com/phenixrizen/zen/issues/362)) ([aca131c](https://github.com/phenixrizen/zen/commit/aca131cf4cfbc8c951e8ba8824fe87cefde71022))
+* improve READMEs across bindings ([#516](https://github.com/phenixrizen/zen/issues/516)) ([692ca2f](https://github.com/phenixrizen/zen/commit/692ca2fe6b503a42da6b311dbefdf603a3ae5df4))
+* panic hardening ([#509](https://github.com/phenixrizen/zen/issues/509)) ([792e77a](https://github.com/phenixrizen/zen/commit/792e77a82e531fc437b536b1e42b73a610f02ae0))
+* rename templates crate ([#140](https://github.com/phenixrizen/zen/issues/140)) ([ebba323](https://github.com/phenixrizen/zen/commit/ebba3233668779fa510a7d059c027eea43137929))
+
+
+### Performance
+
+* general performance improvements ([#500](https://github.com/phenixrizen/zen/issues/500)) ([fe43b4c](https://github.com/phenixrizen/zen/commit/fe43b4c1d71fb28c247ffb0ebd9e332d34f5f907))
+
 ## [2.0.1](https://github.com/gorules/zen/compare/zen-tmpl-v2.0.0...zen-tmpl-v2.0.1) (2026-08-22)
 
 

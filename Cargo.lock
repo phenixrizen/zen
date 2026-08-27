@@ -3219,7 +3219,7 @@ dependencies = [
 
 [[package]]
 name = "phenixrizen-zen-engine"
-version = "2.0.1"
+version = "2.1.0"
 dependencies = [
  "ahash 0.8.12",
  "anyhow",
@@ -3264,7 +3264,7 @@ dependencies = [
 
 [[package]]
 name = "phenixrizen-zen-expression"
-version = "2.0.1"
+version = "2.1.0"
 dependencies = [
  "ahash 0.8.12",
  "anyhow",
@@ -3298,7 +3298,7 @@ dependencies = [
 
 [[package]]
 name = "phenixrizen-zen-macros"
-version = "2.0.1"
+version = "2.1.0"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -3308,7 +3308,7 @@ dependencies = [
 
 [[package]]
 name = "phenixrizen-zen-tmpl"
-version = "2.0.1"
+version = "2.1.0"
 dependencies = [
  "phenixrizen-zen-expression",
  "serde",
@@ -3318,7 +3318,7 @@ dependencies = [
 
 [[package]]
 name = "phenixrizen-zen-types"
-version = "2.0.1"
+version = "2.1.0"
 dependencies = [
  "ahash 0.8.12",
  "hipstr",
@@ -7058,7 +7058,7 @@ dependencies = [
 
 [[package]]
 name = "zen-ffi"
-version = "2.0.1"
+version = "2.1.0"
 dependencies = [
  "anyhow",
  "cbindgen",
@@ -7076,7 +7076,7 @@ dependencies = [
 
 [[package]]
 name = "zen-nodejs"
-version = "2.0.2"
+version = "2.1.0"
 dependencies = [
  "ahash 0.8.12",
  "iana-time-zone",
@@ -7095,7 +7095,7 @@ dependencies = [
 
 [[package]]
 name = "zen-python"
-version = "2.0.2"
+version = "2.1.0"
 dependencies = [
  "anyhow",
  "either",
@@ -7114,7 +7114,7 @@ dependencies = [
 
 [[package]]
 name = "zen-uniffi"
-version = "2.0.2"
+version = "2.1.0"
 dependencies = [
  "async-trait",
  "phenixrizen-zen-engine",
