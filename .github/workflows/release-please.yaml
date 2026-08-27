@@ -58,8 +58,8 @@ jobs:
         run: |
           cargo update --workspace
           git diff --quiet Cargo.lock && exit 0
-          git config user.name "Bot GoRules"
-          git config user.email "bot@gorules.io"
+          git config user.name "Phenix Rizen"
+          git config user.email "phenixrizen@gmail.com"
           git add Cargo.lock
           git commit -m "chore: update Cargo.lock for release"
           git push
