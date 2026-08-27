@@ -15,7 +15,7 @@ pub enum SqliteError {
     RawDisabled,
 
     #[error("sqlite: {0}")]
-    Database(#[from] rusqlite::Error),
+    Database(#[from] turso::Error),
 }
 
 impl SqliteError {
