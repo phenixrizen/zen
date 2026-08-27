@@ -544,12 +544,14 @@ jobs:
     if: "github.ref_type == 'tag'"
 
     steps:
+      # Deploy key scoped to phenixrizen/zen-ios alone, rather than a personal
+      # access token carrying write access to every repository the owner can reach.
       - name: Checkout zen-ios
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: phenixrizen/zen-ios
-          persist-credentials: false
-          token: ${{ secrets.PAT }}
+          ssh-key: ${{ secrets.ZEN_IOS_DEPLOY_KEY }}
+          persist-credentials: true
 
       - name: Download XCFramework
         uses: actions/download-artifact@v4
@@ -581,10 +583,8 @@ jobs:
           git checkout -b $BRANCH_NAME
           
           # Setup the committers identity
-          git config user.email "bot@gorules.io"
-          git config user.name "Bot GoRules"
-          git config http.postBuffer 524288000
-          git config http.lowSpeedTime 600
+          git config user.email "phenixrizen@gmail.com"
+          git config user.name "Phenix Rizen"
           
           # Show what we have
           ls -la
@@ -595,28 +595,20 @@ jobs:
           git commit -m "chore: update XCFramework"
 
       - name: Push changes
-        uses: ad-m/github-push-action@master
-        with:
-          repository: phenixrizen/zen-ios
-          github_token: ${{ secrets.PAT }}
-          branch: ${{ env.BRANCH_NAME }}
+        run: git push origin "${{ env.BRANCH_NAME }}"
 
-      - name: Create PR
+      # A deploy key can push but cannot call the API, so it cannot open the PR.
+      # Surface the compare link instead.
+      - name: Summarise
         run: |
           BRANCH_NAME="${{ env.BRANCH_NAME }}"
-          
-          # Store the PAT in a file that can be accessed by the GitHub CLI
-          echo "${{ secrets.PAT }}" > token.txt
-          
-          # Authorize GitHub CLI and create a pull request
-          echo "Authorizing for PR"
-          gh auth login --with-token < token.txt
-          gh pr create \
-            --body "" \
-            --title "chore: update XCFramework" \
-            --head "$BRANCH_NAME" \
-            --base "master"
-
+          {
+            echo "### zen-ios XCFramework update pushed"
+            echo
+            echo "Branch \`$BRANCH_NAME\` is on phenixrizen/zen-ios."
+            echo
+            echo "[Open the pull request](https://github.com/phenixrizen/zen-ios/compare/master...$BRANCH_NAME?expand=1)"
+          } >> "$GITHUB_STEP_SUMMARY"
   build-android:
     runs-on: ubuntu-latest
     permissions:
