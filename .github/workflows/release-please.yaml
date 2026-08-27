@@ -46,10 +46,7 @@ jobs:
         uses: actions/create-github-app-token@v3
         id: app-token
         with:
-          # Client ID is not sensitive, so it lives in a variable where it can be
-          # read back. An empty secret here is invisible and fails identically to
-          # a missing one, which is a bad way to spend a debugging session.
-          client-id: ${{ vars.RELEASE_APP_CLIENT_ID }}
+          client-id: ${{ secrets.RELEASE_APP_CLIENT_ID }}
           private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
 
       - uses: googleapis/release-please-action@v5
