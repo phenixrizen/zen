@@ -2,7 +2,7 @@
 name = "phenixrizen-zen-database-sqlite"
 description = "Pure-Rust SQLite database handler for the ZEN engine"
 license = "MIT"
-version = "2.1.0"
+version = "2.2.0"
 edition = "2021"
 authors = ["Phenix Rizen <phenixrizen@gmail.com>"]
 repository = "https://github.com/phenixrizen/zen.git"

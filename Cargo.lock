@@ -2800,7 +2800,7 @@ dependencies = [
 
 [[package]]
 name = "phenixrizen-zen-database-sqlite"
-version = "2.1.0"
+version = "2.2.0"
 dependencies = [
  "ahash 0.8.12",
  "phenixrizen-zen-engine",
@@ -2817,7 +2817,7 @@ dependencies = [
 
 [[package]]
 name = "phenixrizen-zen-engine"
-version = "2.1.0"
+version = "2.2.0"
 dependencies = [
  "ahash 0.8.12",
  "anyhow",
@@ -2862,7 +2862,7 @@ dependencies = [
 
 [[package]]
 name = "phenixrizen-zen-expression"
-version = "2.1.0"
+version = "2.2.0"
 dependencies = [
  "ahash 0.8.12",
  "anyhow",
@@ -2896,7 +2896,7 @@ dependencies = [
 
 [[package]]
 name = "phenixrizen-zen-macros"
-version = "2.1.0"
+version = "2.2.0"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2906,7 +2906,7 @@ dependencies = [
 
 [[package]]
 name = "phenixrizen-zen-tmpl"
-version = "2.1.0"
+version = "2.2.0"
 dependencies = [
  "phenixrizen-zen-expression",
  "serde",
@@ -2916,7 +2916,7 @@ dependencies = [
 
 [[package]]
 name = "phenixrizen-zen-types"
-version = "2.1.0"
+version = "2.2.0"
 dependencies = [
  "ahash 0.8.12",
  "hipstr",
@@ -6216,7 +6216,7 @@ dependencies = [
 
 [[package]]
 name = "zen-nodejs"
-version = "2.1.0"
+version = "2.2.0"
 dependencies = [
  "ahash 0.8.12",
  "iana-time-zone",
