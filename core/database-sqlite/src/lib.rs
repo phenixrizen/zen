@@ -1,7 +1,11 @@
-//! Pure-Rust SQLite handler for the ZEN engine's `databaseNode`.
+//! SQLite handler for the ZEN engine's `databaseNode`.
 //!
-//! Backed by [Turso](https://github.com/tursodatabase/turso), a Rust reimplementation of SQLite,
-//! so there is no C toolchain, no vendored amalgamation, and no `unsafe` FFI in the build.
+//! Backed by SQLite itself, compiled from the bundled amalgamation so every platform runs an
+//! identical, pinned version rather than whatever the host happens to provide.
+//!
+//! rusqlite is synchronous while `DatabaseHandler` is async, so each query runs on a blocking
+//! thread. A local SQLite read is short, but blocking the executor for it would stall every other
+//! evaluation sharing that thread.
 //!
 //! ```no_run
 //! use std::sync::Arc;
@@ -59,8 +63,7 @@ impl SqliteDatabaseHandler {
     }
 
     async fn run(&self, request: DatabaseRequest) -> Result<DatabaseResponse, SqliteError> {
-        let lease = self.sources.lease(&request.source).await?;
-        let conn = lease.conn();
+        let mut lease = self.sources.lease(&request.source)?;
 
         let mut params: Vec<DatabaseValue> = Vec::new();
         let (prefix, relation_names) =
@@ -82,44 +85,29 @@ impl SqliteDatabaseHandler {
         params.extend(rendered.params);
         let sql = format!("{prefix}{}", rendered.sql);
 
-        let bound: Vec<turso::Value> = params.iter().map(value::to_sql).collect();
-        let mut statement = conn.prepare(&sql).await.map_err(SqliteError::from)?;
+        let bound: Vec<rusqlite::types::Value> = params.iter().map(value::to_sql).collect();
+        let max_rows = request.max_rows;
 
-        // Column names come from the prepared statement so they are known even when the query
-        // matches nothing - a zero-row result still has a shape.
-        let columns: Vec<String> = statement
-            .columns()
-            .iter()
-            .map(|column| column.name().to_string())
-            .collect();
+        let conn = lease.take();
+        let source = lease.source();
 
-        let mut rows = statement
-            .query(turso::params_from_iter(bound))
-            .await
-            .map_err(SqliteError::from)?;
-
-        let mut collected: Vec<Vec<DatabaseValue>> = Vec::new();
-        let mut truncated = false;
-
-        while let Some(row) = rows.next().await.map_err(SqliteError::from)? {
-            if collected.len() as u32 >= request.max_rows {
-                truncated = true;
-                break;
-            }
-
-            let mut values = Vec::with_capacity(columns.len());
-            for index in 0..columns.len() {
-                let raw = row.get_value(index).map_err(SqliteError::from)?;
-                values.push(value::from_sql(raw));
-            }
-            collected.push(values);
-        }
-
-        Ok(DatabaseResponse {
-            columns,
-            rows: collected,
-            truncated,
+        // rusqlite is synchronous. Running it on a blocking thread keeps the async executor free,
+        // and the connection moves with it because it is Send but not Sync.
+        let outcome = tokio::task::spawn_blocking(move || {
+            let result = execute(&conn, &sql, bound, max_rows);
+            (conn, result)
         })
+        .await;
+
+        match outcome {
+            Ok((conn, result)) => {
+                pool::release(source, conn);
+                result
+            }
+            // The connection was lost with the panicking task, so there is nothing to return to
+            // the pool; the next request opens a fresh one.
+            Err(join) => Err(SqliteError::query(format!("query task failed: {join}"))),
+        }
     }
 }
 
@@ -130,4 +118,46 @@ impl DatabaseHandler for SqliteDatabaseHandler {
     ) -> Pin<Box<dyn Future<Output = Result<DatabaseResponse, String>> + Send + '_>> {
         Box::pin(async move { self.run(request).await.map_err(|err| err.to_string()) })
     }
+}
+
+/// Runs one prepared statement to completion. Synchronous: called from a blocking thread.
+fn execute(
+    conn: &rusqlite::Connection,
+    sql: &str,
+    bound: Vec<rusqlite::types::Value>,
+    max_rows: u32,
+) -> Result<DatabaseResponse, SqliteError> {
+    let mut statement = conn.prepare(sql)?;
+
+    // Column names come from the prepared statement so they are known even when the query
+    // matches nothing - a zero-row result still has a shape.
+    let columns: Vec<String> = statement
+        .column_names()
+        .into_iter()
+        .map(str::to_string)
+        .collect();
+
+    let mut rows = statement.query(rusqlite::params_from_iter(bound))?;
+
+    let mut collected: Vec<Vec<DatabaseValue>> = Vec::new();
+    let mut truncated = false;
+
+    while let Some(row) = rows.next()? {
+        if collected.len() as u32 >= max_rows {
+            truncated = true;
+            break;
+        }
+
+        let mut values = Vec::with_capacity(columns.len());
+        for index in 0..columns.len() {
+            values.push(value::from_sql(row.get_ref(index)?));
+        }
+        collected.push(values);
+    }
+
+    Ok(DatabaseResponse {
+        columns,
+        rows: collected,
+        truncated,
+    })
 }
