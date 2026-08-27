@@ -221,7 +221,10 @@ jobs:
     runs-on: ubuntu-latest
     environment: release
     needs: [ build, test-jvm-dotnet ]
-    if: "github.ref_type == 'tag'"
+    # Disabled: this publishes to Maven Central (SONATYPE_USERNAME, SONATYPE_PASSWORD, GPG_SIGNING_KEY, GPG_SIGNING_PASSPHRASE),
+    # and those credentials are not configured. Set the repository variable
+    # PUBLISH_JVM_DOTNET to "true" to turn it back on -- no code change needed.
+    if: "github.ref_type == 'tag' && vars.PUBLISH_JVM_DOTNET == 'true'"
     defaults:
       run:
         working-directory: ${{ env.UNIFFI_DIRECTORY }}
@@ -297,7 +300,10 @@ jobs:
     needs: [ build, test-jvm-dotnet ]
     permissions:
       id-token: write  # Required for OIDC
-    if: "github.ref_type == 'tag'"
+    # Disabled: this publishes to NuGet (NUGET_USER),
+    # and those credentials are not configured. Set the repository variable
+    # PUBLISH_JVM_DOTNET to "true" to turn it back on -- no code change needed.
+    if: "github.ref_type == 'tag' && vars.PUBLISH_JVM_DOTNET == 'true'"
     defaults:
       run:
         working-directory: ${{ env.UNIFFI_DIRECTORY }}
@@ -801,7 +807,10 @@ jobs:
     runs-on: ubuntu-latest
     environment: release
     needs: [ package-android-aar ]
-    if: "github.ref_type == 'tag'"
+    # Disabled: this publishes to Maven Central (SONATYPE_USERNAME, SONATYPE_PASSWORD, GPG_SIGNING_KEY, GPG_SIGNING_PASSPHRASE),
+    # and those credentials are not configured. Set the repository variable
+    # PUBLISH_JVM_DOTNET to "true" to turn it back on -- no code change needed.
+    if: "github.ref_type == 'tag' && vars.PUBLISH_JVM_DOTNET == 'true'"
     defaults:
       run:
         working-directory: ${{ env.UNIFFI_DIRECTORY }}

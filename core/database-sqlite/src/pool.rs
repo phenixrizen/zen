@@ -6,15 +6,15 @@
 //! correctness one.
 
 use ahash::HashMap;
-use std::path::PathBuf;
+use rusqlite::{Connection, OpenFlags};
+use std::path::{Path, PathBuf};
 use std::sync::{Mutex, RwLock};
-use turso::{Builder, Connection, Database};
 
 use crate::config::SqliteConfig;
 use crate::error::SqliteError;
 
-struct Source {
-    database: Database,
+pub(crate) struct Source {
+    path: PathBuf,
     /// Connections are relatively expensive to create and hold no per-request state, so they are
     /// recycled. The lock is held only to pop or push a handle, never across a query.
     idle: Mutex<Vec<Connection>>,
@@ -28,6 +28,23 @@ pub(crate) struct Sources {
     config: SqliteConfig,
 }
 
+/// Opens a connection read-only.
+///
+/// `SQLITE_OPEN_READ_ONLY` alone still permits writes to temporary storage; this driver never
+/// needs any, and refusing them keeps a malformed request from mutating reference data.
+fn open(path: &Path) -> Result<Connection, SqliteError> {
+    let conn = Connection::open_with_flags(
+        path,
+        OpenFlags::SQLITE_OPEN_READ_ONLY
+            | OpenFlags::SQLITE_OPEN_URI
+            | OpenFlags::SQLITE_OPEN_NO_MUTEX,
+    )?;
+    // Reference data is read concurrently and never written here, so the rollback journal and
+    // synchronous writes are pure overhead.
+    conn.pragma_update(None, "query_only", true)?;
+    Ok(conn)
+}
+
 /// A connection borrowed from a source, returned on drop.
 pub(crate) struct Lease {
     source: &'static Source,
@@ -35,8 +52,21 @@ pub(crate) struct Lease {
 }
 
 impl Lease {
-    pub fn conn(&self) -> &Connection {
-        self.conn.as_ref().expect("connection held for the lease")
+    /// Takes the connection out of the lease so it can move into a blocking task.
+    ///
+    /// rusqlite is synchronous, so queries run on a blocking thread rather than the async
+    /// executor. The connection is `Send` but not `Sync`, so it moves rather than being borrowed.
+    pub fn take(&mut self) -> Connection {
+        self.conn.take().expect("connection held for the lease")
+    }
+
+    /// Hands a connection back after a blocking task has finished with it.
+    pub fn restore(&mut self, conn: Connection) {
+        self.conn = Some(conn);
+    }
+
+    pub fn source(&self) -> &'static Source {
+        self.source
     }
 }
 
@@ -53,6 +83,15 @@ impl Drop for Lease {
     }
 }
 
+/// Returns a connection to a source's idle set, used when the lease itself has been consumed.
+pub(crate) fn release(source: &'static Source, conn: Connection) {
+    if let Ok(mut idle) = source.idle.lock() {
+        if idle.len() < source.max_idle {
+            idle.push(conn);
+        }
+    }
+}
+
 impl Sources {
     pub fn new(config: SqliteConfig) -> Self {
         Self {
@@ -61,7 +100,7 @@ impl Sources {
         }
     }
 
-    async fn source(&self, name: &str) -> Result<&'static Source, SqliteError> {
+    fn source(&self, name: &str) -> Result<&'static Source, SqliteError> {
         let path = self.config.resolve(name)?;
 
         // Fast path: a shared read, which is what every request after the first takes.
@@ -75,13 +114,8 @@ impl Sources {
             return Err(SqliteError::UnknownSource(name.to_string()));
         }
 
-        let database = Builder::new_local(
-            path.to_str()
-                .ok_or_else(|| SqliteError::UnknownSource(name.to_string()))?,
-        )
-        .build()
-        .await
-        .map_err(SqliteError::from)?;
+        // Open once here so a bad path fails now rather than on first query.
+        let probe = open(&path)?;
 
         let mut sources = self
             .sources
@@ -96,8 +130,8 @@ impl Sources {
         // Sources live as long as the handler, which lives as long as the engine; leaking keeps
         // leases borrow-free without an Arc clone on every request.
         let source: &'static Source = Box::leak(Box::new(Source {
-            database,
-            idle: Mutex::new(Vec::new()),
+            path: path.clone(),
+            idle: Mutex::new(vec![probe]),
             max_idle: self.config.max_connections,
         }));
         sources.insert(path, source);
@@ -106,13 +140,13 @@ impl Sources {
     }
 
     /// Borrows a connection for one request.
-    pub async fn lease(&self, name: &str) -> Result<Lease, SqliteError> {
-        let source = self.source(name).await?;
+    pub fn lease(&self, name: &str) -> Result<Lease, SqliteError> {
+        let source = self.source(name)?;
 
         let pooled = source.idle.lock().ok().and_then(|mut idle| idle.pop());
         let conn = match pooled {
             Some(conn) => conn,
-            None => source.database.connect().map_err(SqliteError::from)?,
+            None => open(&source.path)?,
         };
 
         Ok(Lease {
