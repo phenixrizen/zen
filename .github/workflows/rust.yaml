@@ -89,3 +89,6 @@ jobs:
 
       - name: Publish Engine
         run: cd core/engine && cargo publish --locked
+
+      - name: Publish SQLite database handler
+        run: cd core/database-sqlite && cargo publish --locked
