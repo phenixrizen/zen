@@ -25,7 +25,14 @@ rust_decimal = { workspace = true }
 thiserror = { workspace = true }
 tokio = { workspace = true, features = ["sync"] }
 # Pure-Rust SQLite: no C toolchain, no vendored amalgamation, wasm-capable.
-turso = "0.7"
+#
+# default-features = false is load-bearing, not tidiness:
+#   * `mimalloc` installs a #[global_allocator] process-wide. A host that frees a
+#     string this library returned using libc free() -- the cgo bindings do exactly
+#     that -- then aborts with "free(): invalid pointer".
+#   * `fts` pulls tantivy in, and with it zstd-sys, which compiles C. The whole
+#     point of choosing turso over rusqlite was to keep C out of the build.
+turso = { version = "0.7", default-features = false }
 
 [dev-dependencies]
 zen-expression = { package = "phenixrizen-zen-expression", path = "../expression", version = "2.0.1" }
