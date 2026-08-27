@@ -9,9 +9,14 @@ name: Release Please
 #   * creates a git tag + GitHub Release for that component.
 #
 # The GitHub Release is what triggers the matching publish workflow
-# (node.yaml / python.yaml / rust.yaml / uniffi.yaml) via its
-# `on: release` trigger. We use a PAT (not GITHUB_TOKEN) so the created
-# release is allowed to trigger those downstream workflows.
+# (node.yaml / python.yaml / rust.yaml / uniffi.yaml).
+#
+# Authentication is a GitHub App token minted per run, not GITHUB_TOKEN and not
+# a PAT. GITHUB_TOKEN cannot be used here at all: GitHub deliberately refuses to
+# let events it creates trigger other workflows, so the tag would be cut and
+# nothing would publish. A PAT would work but authenticates as a human across
+# every repository they can reach, and lives until revoked. An App token is
+# scoped to the repositories the App is installed on and expires in an hour.
 #
 # Tags (include-component-in-tag + tag-separator "-"):
 #   core   -> zen-engine-v<ver> (+ the 5 linked core crates), python -> python-v<ver>,
@@ -37,10 +42,17 @@ jobs:
     name: Release Please
     runs-on: ubuntu-latest
     steps:
+      - name: Mint a short-lived App token
+        uses: actions/create-github-app-token@v3
+        id: app-token
+        with:
+          app-id: ${{ secrets.RELEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+
       - uses: googleapis/release-please-action@v5
         id: release
         with:
-          token: ${{ secrets.PAT }}
+          token: ${{ steps.app-token.outputs.token }}
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
 
@@ -48,7 +60,7 @@ jobs:
         if: steps.release.outputs.pr
         with:
           ref: ${{ fromJSON(steps.release.outputs.pr).headBranchName }}
-          token: ${{ secrets.PAT }}
+          token: ${{ steps.app-token.outputs.token }}
 
       - uses: dtolnay/rust-toolchain@stable
         if: steps.release.outputs.pr
