@@ -135,8 +135,8 @@ jobs:
           BRANCH_NAME="${{ env.BRANCH_NAME }}"
           git checkout -b $BRANCH_NAME
           # Setup the committers identity.
-          git config user.email "bot@gorules.io"
-          git config user.name "Bot GoRules"
+          git config user.email "phenixrizen@gmail.com"
+          git config user.name "Phenix Rizen"
           git config http.postBuffer 524288000
           git config http.lowSpeedTime 600
           
