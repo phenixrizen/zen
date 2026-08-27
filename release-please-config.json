@@ -22,7 +22,8 @@
         "zen-expression",
         "zen-types",
         "zen-tmpl",
-        "zen-macros"
+        "zen-macros",
+        "zen-database-sqlite"
       ]
     }
   ],
@@ -32,6 +33,7 @@
     "core/types": { "release-type": "rust", "component": "zen-types" },
     "core/template": { "release-type": "rust", "component": "zen-tmpl" },
     "core/macros": { "release-type": "rust", "component": "zen-macros" },
+    "core/database-sqlite": { "release-type": "rust", "component": "zen-database-sqlite" },
     "bindings/nodejs": {
       "release-type": "rust",
       "component": "nodejs",

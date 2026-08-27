@@ -39,7 +39,7 @@ use zen_engine::nodes::database::{
 
 use crate::pool::Sources;
 
-/// Conservative default; Turso follows SQLite's modern parameter ceiling.
+/// Conservative default, below SQLite's modern SQLITE_MAX_VARIABLE_NUMBER.
 const VARIABLE_LIMIT: usize = 32_766;
 
 #[derive(Debug)]

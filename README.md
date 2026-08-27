@@ -15,7 +15,7 @@
 > | addition | what it does |
 > | --- | --- |
 > | `databaseNode` + `DatabaseHandler` | A first-class node for looking reference data up from a decision graph, with a host extension point. Values are always bound, never interpolated. |
-> | `zen-database-sqlite` | A SQLite handler built on [Turso](https://github.com/tursodatabase/turso): **pure Rust, no `rusqlite`, no vendored SQLite amalgamation.** (The engine itself already links `aws-lc-rs` through `reqwest`/`rustls`, which does compile C — that predates this fork.) |
+> | `zen-database-sqlite` | A SQLite handler for reference-data lookups, backed by SQLite itself via `rusqlite` with the amalgamation bundled — so every platform runs one pinned version rather than whatever the host provides. |
 > | Decision-level `$params` | Static parameters supplied per decision and reachable from switch, expression, and function nodes. |
 > | `TZ` is honoured | `local` timezone resolution respects the `TZ` environment variable instead of only `/etc/localtime`. |
 > | Exact fractional numbers | Fixes silent truncation of every non-integer value when `arbitrary_precision` is off. |

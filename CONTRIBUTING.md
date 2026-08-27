@@ -20,10 +20,8 @@ upstream `master`.
 
 ## Development setup
 
-Requires a stable Rust toolchain. The SQLite handler is pure Rust
-([Turso](https://github.com/tursodatabase/turso)) rather than `rusqlite`, so nothing vendors or
-compiles the SQLite amalgamation. A C compiler is still needed for `aws-lc-rs`, which the engine
-pulls in through `reqwest`/`rustls`.
+Requires a stable Rust toolchain and a C compiler. The SQLite handler bundles the SQLite
+amalgamation through `rusqlite`, and `aws-lc-rs` compiles C as well via `reqwest`/`rustls`.
 
 ```bash
 git clone https://github.com/phenixrizen/zen.git
