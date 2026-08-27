@@ -2,9 +2,11 @@
 name = "phenixrizen-zen-database-sqlite"
 description = "Pure-Rust SQLite database handler for the ZEN engine"
 license = "MIT"
-version = "1.0.0-beta.12"
+version = "2.0.1"
 edition = "2021"
-publish = false
+authors = ["Phenix Rizen <phenixrizen@gmail.com>"]
+repository = "https://github.com/phenixrizen/zen.git"
+homepage = "https://github.com/phenixrizen/zen"
 
 [features]
 # Mirrors the workspace: the engine is built both ways in CI, so the driver must be too.
@@ -14,8 +16,8 @@ arbitrary_precision = ["zen-engine/arbitrary_precision", "zen-types/arbitrary_pr
 name = "zen_database_sqlite"
 
 [dependencies]
-zen-engine = { package = "phenixrizen-zen-engine", path = "../engine", version = "1.0.0-beta.12" }
-zen-types = { package = "phenixrizen-zen-types", path = "../types", version = "1.0.0-beta.12" }
+zen-engine = { package = "phenixrizen-zen-engine", path = "../engine", version = "2.0.1" }
+zen-types = { package = "phenixrizen-zen-types", path = "../types", version = "2.0.1" }
 ahash = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
@@ -26,8 +28,8 @@ tokio = { workspace = true, features = ["sync"] }
 turso = "0.7"
 
 [dev-dependencies]
-zen-expression = { package = "phenixrizen-zen-expression", path = "../expression", version = "1.0.0-beta.12" }
-zen-types = { package = "phenixrizen-zen-types", path = "../types", version = "1.0.0-beta.12" }
+zen-expression = { package = "phenixrizen-zen-expression", path = "../expression", version = "2.0.1" }
+zen-types = { package = "phenixrizen-zen-types", path = "../types", version = "2.0.1" }
 serde_json = { workspace = true }
 tempfile = "3"
 tokio = { workspace = true, features = ["rt", "rt-multi-thread", "macros"] }

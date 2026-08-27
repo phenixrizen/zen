@@ -1512,9 +1512,9 @@ name = "expression_repl"
 version = "2.0.1"
 dependencies = [
  "colored",
+ "phenixrizen-zen-expression",
  "rustyline",
  "serde_json",
- "zen-expression",
 ]
 
 [[package]]
@@ -3401,6 +3401,137 @@ dependencies = [
  "hashbrown 0.15.5",
  "indexmap",
  "serde",
+]
+
+[[package]]
+name = "phenixrizen-zen-database-sqlite"
+version = "2.0.1"
+dependencies = [
+ "ahash 0.8.12",
+ "phenixrizen-zen-engine",
+ "phenixrizen-zen-expression",
+ "phenixrizen-zen-types",
+ "rust_decimal",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror 1.0.69",
+ "tokio",
+ "turso",
+]
+
+[[package]]
+name = "phenixrizen-zen-engine"
+version = "2.0.1"
+dependencies = [
+ "ahash 0.8.12",
+ "anyhow",
+ "arc-swap",
+ "async-trait",
+ "base64",
+ "criterion",
+ "downcast-rs",
+ "fixedbitset",
+ "flate2",
+ "http",
+ "insta",
+ "json_dotpath",
+ "jsonschema",
+ "mimalloc",
+ "nohash-hasher",
+ "once_cell",
+ "petgraph",
+ "phenixrizen-zen-expression",
+ "phenixrizen-zen-tmpl",
+ "phenixrizen-zen-types",
+ "reqsign",
+ "reqwest 0.12.28",
+ "rquickjs",
+ "rust_decimal",
+ "self_cell",
+ "serde",
+ "serde_json",
+ "serde_path_to_error",
+ "sha2 0.10.9",
+ "strum 0.27.2",
+ "swc_common",
+ "swc_ecma_ast",
+ "swc_ecma_parser",
+ "swc_ts_fast_strip",
+ "thiserror 1.0.69",
+ "tokio",
+ "toml",
+ "typed-arena",
+ "zip",
+]
+
+[[package]]
+name = "phenixrizen-zen-expression"
+version = "2.0.1"
+dependencies = [
+ "ahash 0.8.12",
+ "anyhow",
+ "bumpalo",
+ "chrono",
+ "chrono-tz",
+ "criterion",
+ "csv",
+ "fastrand",
+ "humantime",
+ "iana-time-zone",
+ "nohash-hasher",
+ "once_cell",
+ "phenixrizen-zen-macros",
+ "phenixrizen-zen-types",
+ "recursive",
+ "regex",
+ "regex-lite",
+ "rust_decimal",
+ "rust_decimal_macros",
+ "serde",
+ "serde_json",
+ "serde_json5",
+ "smallvec",
+ "strsim",
+ "strum 0.27.2",
+ "strum_macros 0.27.2",
+ "thiserror 1.0.69",
+ "toml",
+]
+
+[[package]]
+name = "phenixrizen-zen-macros"
+version = "2.0.1"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "serde_derive_internals",
+ "syn 2.0.117",
+]
+
+[[package]]
+name = "phenixrizen-zen-tmpl"
+version = "2.0.1"
+dependencies = [
+ "phenixrizen-zen-expression",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+]
+
+[[package]]
+name = "phenixrizen-zen-types"
+version = "2.0.1"
+dependencies = [
+ "ahash 0.8.12",
+ "hipstr",
+ "nohash-hasher",
+ "rust_decimal",
+ "rust_decimal_macros",
+ "serde",
+ "serde_json",
+ "smallvec",
+ "thiserror 1.0.69",
 ]
 
 [[package]]
@@ -7349,107 +7480,11 @@ dependencies = [
 name = "zen-benchmark"
 version = "0.0.16"
 dependencies = [
+ "phenixrizen-zen-engine",
+ "phenixrizen-zen-expression",
  "serde",
  "serde_json",
  "tokio",
- "zen-engine",
- "zen-expression",
-]
-
-[[package]]
-name = "zen-database-sqlite"
-version = "1.0.0-beta.12"
-dependencies = [
- "ahash 0.8.12",
- "rust_decimal",
- "serde",
- "serde_json",
- "tempfile",
- "thiserror 1.0.69",
- "tokio",
- "turso",
- "zen-engine",
- "zen-expression",
- "zen-types",
-]
-
-[[package]]
-name = "zen-engine"
-version = "2.0.1"
-dependencies = [
- "ahash 0.8.12",
- "anyhow",
- "arc-swap",
- "async-trait",
- "base64",
- "criterion",
- "downcast-rs",
- "fixedbitset",
- "flate2",
- "http",
- "insta",
- "json_dotpath",
- "jsonschema",
- "mimalloc",
- "nohash-hasher",
- "once_cell",
- "petgraph",
- "reqsign",
- "reqwest 0.12.28",
- "rquickjs",
- "rust_decimal",
- "self_cell",
- "serde",
- "serde_json",
- "serde_path_to_error",
- "sha2 0.10.9",
- "strum 0.27.2",
- "swc_common",
- "swc_ecma_ast",
- "swc_ecma_parser",
- "swc_ts_fast_strip",
- "thiserror 1.0.69",
- "tokio",
- "toml",
- "typed-arena",
- "zen-expression",
- "zen-tmpl",
- "zen-types",
- "zip",
-]
-
-[[package]]
-name = "zen-expression"
-version = "2.0.1"
-dependencies = [
- "ahash 0.8.12",
- "anyhow",
- "bumpalo",
- "chrono",
- "chrono-tz",
- "criterion",
- "csv",
- "fastrand",
- "humantime",
- "iana-time-zone",
- "nohash-hasher",
- "once_cell",
- "recursive",
- "regex",
- "regex-lite",
- "rust_decimal",
- "rust_decimal_macros",
- "serde",
- "serde_json",
- "serde_json5",
- "smallvec",
- "strsim",
- "strum 0.27.2",
- "strum_macros 0.27.2",
- "thiserror 1.0.69",
- "toml",
- "zen-macros",
- "zen-types",
 ]
 
 [[package]]
@@ -7459,25 +7494,15 @@ dependencies = [
  "anyhow",
  "cbindgen",
  "libc",
+ "phenixrizen-zen-database-sqlite",
+ "phenixrizen-zen-engine",
+ "phenixrizen-zen-expression",
+ "phenixrizen-zen-tmpl",
  "serde",
  "serde_json",
  "strum 0.27.2",
  "tokio",
  "tokio-util",
- "zen-database-sqlite",
- "zen-engine",
- "zen-expression",
- "zen-tmpl",
-]
-
-[[package]]
-name = "zen-macros"
-version = "2.0.1"
-dependencies = [
- "proc-macro2",
- "quote",
- "serde_derive_internals",
- "syn 2.0.117",
 ]
 
 [[package]]
@@ -7491,12 +7516,12 @@ dependencies = [
  "napi-build",
  "napi-derive",
  "napi-sys",
+ "phenixrizen-zen-engine",
+ "phenixrizen-zen-expression",
+ "phenixrizen-zen-tmpl",
  "serde",
  "serde_json",
  "tokio-util",
- "zen-engine",
- "zen-expression",
- "zen-tmpl",
 ]
 
 [[package]]
@@ -7506,6 +7531,9 @@ dependencies = [
  "anyhow",
  "either",
  "json_dotpath",
+ "phenixrizen-zen-engine",
+ "phenixrizen-zen-expression",
+ "phenixrizen-zen-tmpl",
  "pyo3",
  "pyo3-async-runtimes",
  "pythonize",
@@ -7513,34 +7541,6 @@ dependencies = [
  "serde",
  "serde_json",
  "tokio-util",
- "zen-engine",
- "zen-expression",
- "zen-tmpl",
-]
-
-[[package]]
-name = "zen-tmpl"
-version = "2.0.1"
-dependencies = [
- "serde",
- "serde_json",
- "thiserror 1.0.69",
- "zen-expression",
-]
-
-[[package]]
-name = "zen-types"
-version = "2.0.1"
-dependencies = [
- "ahash 0.8.12",
- "hipstr",
- "nohash-hasher",
- "rust_decimal",
- "rust_decimal_macros",
- "serde",
- "serde_json",
- "smallvec",
- "thiserror 1.0.69",
 ]
 
 [[package]]
@@ -7548,12 +7548,12 @@ name = "zen-uniffi"
 version = "2.0.2"
 dependencies = [
  "async-trait",
+ "phenixrizen-zen-engine",
+ "phenixrizen-zen-expression",
  "serde",
  "serde_json",
  "tokio",
  "uniffi",
- "zen-engine",
- "zen-expression",
 ]
 
 [[package]]
