@@ -20,9 +20,10 @@ this repository. A change to evaluation belongs here, not there.
 
 ## Hard constraints
 
-**Never name the prior employer.** Not in code, comments, commit messages, PR bodies, issue
-templates, test fixtures, or tooling. This has been scrubbed from history once already; do not
-reintroduce it. Corpus-specific migration tooling lives in a private repository, not here.
+**Keep internal and third-party names out of the repository.** Not in code, comments, commit
+messages, PR bodies, issue templates, test fixtures, or tooling. Describe data sources generically
+— "a reference-data catalog", not the name of whoever's catalog it is. Corpus-specific migration
+tooling and any real datasets live in a private repository, never here.
 
 **Binary size is a release blocker.** `libzen_ffi.a` is committed into `zen-go` and subject to
 GitHub's hard 100 MB per-file limit. The Linux targets currently sit at ~94 MB — under 7 MB of
