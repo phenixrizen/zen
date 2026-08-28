@@ -137,32 +137,40 @@ jobs:
           mv artifacts/common/zen_engine.h zen_engine.h
           rm -rf artifacts
 
-      - name: Set branch name
+      # Publishes straight to master and tags it, rather than opening a pull
+      # request. A 94MB machine-generated archive cannot be meaningfully reviewed,
+      # and the branch-and-wait flow left a rebuilt XCFramework sitting unmerged
+      # for hours because nobody knew it was there. This runs only on a release
+      # tag, after all five platform builds have passed.
+      - name: Commit and push to master
         run: |
-          echo "BRANCH_NAME=chore/${{ github.run_id }}-${{ github.run_attempt }}" >> $GITHUB_ENV
-
-      - name: Commit
-        run: |
-          BRANCH_NAME="${{ env.BRANCH_NAME }}"
-          git checkout -b $BRANCH_NAME
-          # Setup the committers identity.
           git config user.email "phenixrizen@gmail.com"
           git config user.name "Phenix Rizen"
-          # Commit the changes and push the feature branch to origin
           git add .
-          git commit -m "chore: update deps"
-      - name: Push changes
-        run: git push origin "${{ env.BRANCH_NAME }}"
+          if git diff --cached --quiet; then
+            echo "no dependency changes; nothing to publish" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          git commit -m "chore: update deps for ${{ github.ref_name }}"
+          git push origin HEAD:master
 
-      # A deploy key can push, but it cannot call the API, so it cannot open the
-      # pull request. Surface the compare link instead -- one click to open it.
-      - name: Summarise
+      # The tag mirrors the engine release that produced these libraries, so
+      # zen-go v2.1.0 is the binding built from zen's go-v2.1.0. Without it Go
+      # consumers can only resolve a pseudo-version.
+      - name: Tag the release
+        if: ${{ github.ref_type == 'tag' }}
         run: |
-          BRANCH_NAME="${{ env.BRANCH_NAME }}"
+          VERSION="v${GITHUB_REF_NAME#go-v}"
+          if git ls-remote --exit-code --tags origin "refs/tags/$VERSION" >/dev/null 2>&1; then
+            echo "$VERSION already tagged on zen-go; leaving it alone" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          git tag -a "$VERSION" \
+            -m "$VERSION" \
+            -m "Go binding built from ${{ github.ref_name }}."
+          git push origin "$VERSION"
           {
-            echo "### zen-go dependency update pushed"
+            echo "### zen-go $VERSION published"
             echo
-            echo "Branch \`$BRANCH_NAME\` is on phenixrizen/zen-go."
-            echo
-            echo "[Open the pull request](https://github.com/phenixrizen/zen-go/compare/master...$BRANCH_NAME?expand=1)"
+            echo "Libraries rebuilt from \`${{ github.ref_name }}\` and pushed to master, tagged \`$VERSION\`."
           } >> "$GITHUB_STEP_SUMMARY"
