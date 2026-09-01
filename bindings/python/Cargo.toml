@@ -22,4 +22,9 @@ rust_decimal = { workspace = true, features = ["maths-nopanic"] }
 tokio-util = { version = "0.7", features = ["rt"] }
 zen-engine = { package = "phenixrizen-zen-engine", path = "../../core/engine", features = ["arbitrary_precision"] }
 zen-expression = { package = "phenixrizen-zen-expression", path = "../../core/expression", features = ["arbitrary_precision"] }
+zen-database-sqlite = { package = "phenixrizen-zen-database-sqlite", path = "../../core/database-sqlite", features = ["arbitrary_precision"], optional = true }
 zen-tmpl = { package = "phenixrizen-zen-tmpl", path = "../../core/template" }
+
+[features]
+default = ["sqlite"]
+sqlite = ["dep:zen-database-sqlite"]

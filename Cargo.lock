@@ -6240,6 +6240,7 @@ dependencies = [
  "anyhow",
  "either",
  "json_dotpath",
+ "phenixrizen-zen-database-sqlite",
  "phenixrizen-zen-engine",
  "phenixrizen-zen-expression",
  "phenixrizen-zen-tmpl",

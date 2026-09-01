@@ -157,10 +157,26 @@ impl PyZenEngine {
             None => Arc::new(PyDecisionLoader::default()),
         };
 
-        let engine = DecisionEngine::new(
+        let mut engine = DecisionEngine::new(
             loader,
             Arc::new(PyCustomNode::new(custom_node, make_locals())),
         );
+
+        // `sqliteConfig`: the same JSON the C binding's `with_sqlite` takes
+        // (`{"root": "/catalog"}` or `{"sources": {...}}`). Installs the in-process SQLite
+        // handler so a `databaseNode` can evaluate. Without a handler that node is a hard
+        // error that aborts the whole evaluation — not a skip — so a Python host that
+        // drafts database-backed graphs could not execute one at all.
+        #[cfg(feature = "sqlite")]
+        if let Some(cfg) = options.get_item("sqliteConfig")? {
+            use zen_database_sqlite::{SqliteConfig, SqliteDatabaseHandler};
+
+            let json: String = cfg.extract()?;
+            let config =
+                SqliteConfig::from_json(&json).map_err(|e| anyhow!("invalid sqliteConfig: {e}"))?;
+            engine =
+                engine.with_database_handler(Some(Arc::new(SqliteDatabaseHandler::new(config))));
+        }
         engine.compile();
 
         Ok(Self {
