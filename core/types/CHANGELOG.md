@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.3.0](https://github.com/phenixrizen/zen/compare/zen-types-v2.2.0...zen-types-v2.3.0) (2026-09-02)
+
+
+### Miscellaneous
+
+* **zen-types:** Synchronize core versions
+
 ## [2.2.0](https://github.com/phenixrizen/zen/compare/zen-types-v2.1.0...zen-types-v2.2.0) (2026-08-27)
 
 

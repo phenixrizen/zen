@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.3.0](https://github.com/phenixrizen/zen/compare/zen-engine-v2.2.0...zen-engine-v2.3.0) (2026-09-02)
+
+
+### Miscellaneous
+
+* **zen-engine:** Synchronize core versions
+
 ## [2.2.0](https://github.com/phenixrizen/zen/compare/zen-engine-v2.1.0...zen-engine-v2.2.0) (2026-08-27)
 
 
