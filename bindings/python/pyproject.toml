@@ -4,6 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "phenixrizen-zen-engine"
+dynamic = ["version"]   # taken from Cargo.toml by maturin
 requires-python = ">=3.7"
 classifiers = [
     "Programming Language :: Rust",
@@ -43,4 +44,4 @@ Repository = "https://github.com/phenixrizen/zen"
 zenengine = "reader.__main__:main"
 
 [tool.maturin]
-features = ["pyo3/extension-module"]
+features = ["pyo3/extension-module", "sqlite"]

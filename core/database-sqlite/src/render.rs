@@ -80,14 +80,29 @@ pub(crate) fn render_relations(
                 relation.name
             )));
         }
-        if relation.rows.is_empty() {
-            return Err(SqliteError::query(format!(
-                "relation \"{}\" has no rows; an empty VALUES list cannot be rendered",
-                relation.name
-            )));
-        }
-
         let width = relation.columns.len();
+
+        // An EMPTY relation is a relation with no rows, not an error. A claim with no other
+        // lines has `ocls == []`, and a policy asking "is any of this claim's lines in that
+        // table" must answer NO for it — exactly as `in []` renders `0 = 1` below. Refusing
+        // here aborted the whole evaluation for the most ordinary claim shape there is,
+        // where the equivalent inline `some([], …)` is simply false. VALUES cannot express
+        // zero rows, so the CTE body is a zero-row SELECT of the right arity instead.
+        if relation.rows.is_empty() {
+            let columns = relation
+                .columns
+                .iter()
+                .map(|c| quote(&c.name))
+                .collect::<Result<Vec<_>, _>>()?;
+            clauses.push(format!(
+                "{}({}) AS (SELECT {} WHERE 0 = 1)",
+                quote(&relation.name)?,
+                columns.join(", "),
+                vec!["NULL"; width].join(", ")
+            ));
+            names.insert(relation.name.clone());
+            continue;
+        }
         let needed = width * relation.rows.len();
         if params.len() + needed > variable_limit {
             return Err(SqliteError::query(format!(

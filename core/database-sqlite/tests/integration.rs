@@ -265,6 +265,56 @@ async fn relations_do_not_leak_between_evaluations() {
     );
 }
 
+/// A relation with no rows is a relation with no rows, not an error. A claim with no other
+/// lines has `ocls == []`, and a policy asking "is any of this claim's lines in that table"
+/// must answer NO for it — exactly as an inline `some([], …)` is simply false. The driver used
+/// to refuse to render an empty VALUES list, which aborted the whole evaluation for the most
+/// ordinary claim shape there is.
+#[tokio::test]
+async fn an_empty_relation_is_zero_rows_not_an_error() {
+    if !sqlite3_available() {
+        eprintln!("sqlite3 CLI absent; skipping");
+        return;
+    }
+    let dir = catalog();
+
+    // counted directly: zero
+    let counted = run(
+        &dir,
+        json!({
+            "source": "catalog",
+            "relations": [{ "name": "ocl", "rows": "ocls ?? []",
+                "columns": [{ "name": "v", "type": "text", "value": "procedureCode" }] }],
+            "query": { "type": "select", "table": "ocl", "columns": ["v"] },
+            "result": "count", "outputPath": "n"
+        }),
+        json!({ "ocls": [] }),
+    )
+    .await;
+    assert_eq!(counted, json!({ "n": 0 }).into());
+
+    // joined against reference data and asked `exists`: false, and the evaluation completes
+    let joined = run(
+        &dir,
+        json!({
+            "source": "catalog",
+            "relations": [{ "name": "ocl", "rows": "ocls ?? []",
+                "columns": [{ "name": "v", "type": "text", "value": "procedureCode" }] }],
+            "query": { "type": "select", "table": "fees_short", "columns": ["code"], "limit": 1,
+                "joins": [{ "table": "ocl", "kind": "inner",
+                    "on": [{ "left": "code", "right": "ocl.v" }] }] },
+            "result": "exists", "outputPath": "hit"
+        }),
+        json!({}),
+    )
+    .await;
+    assert_eq!(
+        joined,
+        json!({ "hit": false }).into(),
+        "no lines -> no match, not an abort"
+    );
+}
+
 #[tokio::test]
 async fn raw_queries_are_refused_unless_enabled() {
     if !sqlite3_available() {
