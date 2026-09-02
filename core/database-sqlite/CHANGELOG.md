@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.3.0](https://github.com/phenixrizen/zen/compare/zen-database-sqlite-v2.2.0...zen-database-sqlite-v2.3.0) (2026-09-02)
+
+
+### Features
+
+* **python:** sqliteConfig installs the SQLite handler; fix: empty relation renders zero rows ([#8](https://github.com/phenixrizen/zen/issues/8)) ([b5e0f3d](https://github.com/phenixrizen/zen/commit/b5e0f3d0ed14b3201342b29512df056f1dbf061b))
+
+
+### Bug Fixes
+
+* **database-sqlite:** drop pooled sources with the handler instead of leaking them ([#10](https://github.com/phenixrizen/zen/issues/10)) ([b337687](https://github.com/phenixrizen/zen/commit/b33768794e10680121048c666d93344d3318c5ed))
+
 ## [2.2.0](https://github.com/phenixrizen/zen/compare/zen-database-sqlite-v2.1.0...zen-database-sqlite-v2.2.0) (2026-08-27)
 
 

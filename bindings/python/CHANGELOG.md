@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.2.0](https://github.com/phenixrizen/zen/compare/python-v2.1.0...python-v2.2.0) (2026-09-02)
+
+
+### Features
+
+* **python:** sqliteConfig installs the SQLite handler; fix: empty relation renders zero rows ([#8](https://github.com/phenixrizen/zen/issues/8)) ([b5e0f3d](https://github.com/phenixrizen/zen/commit/b5e0f3d0ed14b3201342b29512df056f1dbf061b))
+
 ## [2.1.0](https://github.com/phenixrizen/zen/compare/python-v2.0.2...python-v2.1.0) (2026-08-27)
 
 
