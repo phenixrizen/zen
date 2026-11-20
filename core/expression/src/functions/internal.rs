@@ -337,9 +337,39 @@ pub(crate) mod imp {
     use rust_decimal::prelude::{FromPrimitive, ToPrimitive};
     use rust_decimal::{Decimal, RoundingStrategy};
     use rust_decimal_macros::dec;
+    use std::cell::RefCell;
     use std::collections::BTreeMap;
     use std::rc::Rc;
     use std::str::FromStr;
+
+    /// How many compiled patterns one thread keeps. Past it, the cache is cleared and refilled.
+    pub(crate) const REGEX_CACHE_CAPACITY: usize = 256;
+
+    thread_local!(
+        static REGEX_CACHE: RefCell<ahash::HashMap<Box<str>, Rc<Regex>>> =
+            RefCell::new(ahash::HashMap::default())
+    );
+
+    /// The compiled form of `pattern`, compiled on the thread's first use of it and kept after.
+    ///
+    /// `matches` and `extract` call this instead of compiling their pattern on every call. The
+    /// result is the same, since a pattern always compiles to the same regex; only when it is
+    /// compiled changes. An invalid pattern is not kept, so it fails on every call.
+    pub(crate) fn cached_regex(pattern: &str) -> anyhow::Result<Rc<Regex>> {
+        if let Some(regex) = REGEX_CACHE.with_borrow(|cache| cache.get(pattern).cloned()) {
+            return Ok(regex);
+        }
+
+        let regex = Rc::new(Regex::new(pattern).context("Invalid regular expression")?);
+        REGEX_CACHE.with_borrow_mut(|cache| {
+            if cache.len() >= REGEX_CACHE_CAPACITY {
+                cache.clear();
+            }
+            cache.insert(pattern.into(), regex.clone());
+        });
+
+        Ok(regex)
+    }
 
     fn __internal_number_array(args: &Arguments, pos: usize) -> anyhow::Result<Vec<Decimal>> {
         let a = args.array(pos)?;
@@ -402,7 +432,7 @@ pub(crate) mod imp {
         let a = args.str(0)?;
         let b = args.str(1)?;
 
-        let regex = Regex::new(b.as_ref()).context("Invalid regular expression")?;
+        let regex = cached_regex(b.as_ref())?;
 
         Ok(V::Bool(regex.is_match(a.as_ref())))
     }
@@ -426,7 +456,7 @@ pub(crate) mod imp {
         let a = args.str(0)?;
         let b = args.str(1)?;
 
-        let regex = Regex::new(b.as_ref()).context("Invalid regular expression")?;
+        let regex = cached_regex(b.as_ref())?;
 
         let captures = regex
             .captures(a.as_ref())
@@ -917,5 +947,118 @@ pub(crate) mod imp {
         };
 
         Ok(V::Dynamic(Rc::new(date_time)))
+    }
+}
+
+#[cfg(test)]
+mod regex_cache_tests {
+    use super::imp::{cached_regex, REGEX_CACHE_CAPACITY};
+    use crate::{Isolate, Variable};
+    #[cfg(not(feature = "regex-lite"))]
+    use regex::Regex;
+    #[cfg(feature = "regex-lite")]
+    use regex_lite::Regex;
+    use serde_json::{json, Value};
+    use std::rc::Rc;
+
+    /// Patterns and inputs covering anchors, capture groups, optional groups that do not take
+    /// part, case-insensitive and Unicode classes, and empty matches.
+    const CASES: &[(&str, &str)] = &[
+        ("^[0-9]+$", "99213"),
+        ("^[0-9]+$", "A0425"),
+        ("^[0-9]+$", ""),
+        ("^0*(42.)$", "0420"),
+        ("^0*(.*)$", "000"),
+        ("^(.*?)s*$", "months"),
+        ("^([A-Z]*)([0-9]+)([A-Z]*)$", "A0425"),
+        ("^([A-Z]*)([0-9]+)([A-Z]*)$", "A-1"),
+        ("^(A)?(B)$", "B"),
+        ("(?i)^[ s]*day[ s]*$", " DAYS "),
+        ("^\\p{L}", "é1234"),
+        ("(?s)^.{4}[MU]", "abc\nM"),
+        ("(\\d{4})-(\\d{2})-(\\d{2})", "on 2022-09-18"),
+        ("", "anything"),
+    ];
+
+    /// The expression's answer, or `None` where it fails.
+    fn run(expression: &str, input: &str, pattern: &str) -> Option<Value> {
+        let env = Variable::from(json!({ "input": input, "pattern": pattern }));
+        Isolate::with_environment(env)
+            .run_standard(expression)
+            .ok()
+            .map(|v| v.to_value())
+    }
+
+    /// What `matches` and `extract` gave before the cache: a pattern compiled for the call, or
+    /// `None` for both where the pattern does not compile (`regex-lite` has no `\p{L}`).
+    fn uncached(pattern: &str, input: &str) -> (Option<Value>, Option<Value>) {
+        let Ok(regex) = Regex::new(pattern) else {
+            return (None, None);
+        };
+        let captures: Vec<&str> = regex
+            .captures(input)
+            .map(|c| c.iter().flatten().map(|m| m.as_str()).collect())
+            .unwrap_or_default();
+        (Some(json!(regex.is_match(input))), Some(json!(captures)))
+    }
+
+    #[test]
+    fn matches_and_extract_answer_as_without_the_cache() {
+        for (pattern, input) in CASES {
+            let (is_match, captures) = uncached(pattern, input);
+            // The first call compiles the pattern, the second finds it in the cache.
+            for _ in 0..2 {
+                assert_eq!(
+                    run("matches(input, pattern)", input, pattern),
+                    is_match,
+                    "matches({input:?}, {pattern:?})"
+                );
+                assert_eq!(
+                    run("extract(input, pattern)", input, pattern),
+                    captures,
+                    "extract({input:?}, {pattern:?})"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn an_invalid_pattern_fails_on_every_call() {
+        for _ in 0..3 {
+            let error = cached_regex("([0-9]").unwrap_err();
+            assert_eq!(error.to_string(), "Invalid regular expression");
+            for expression in ["matches(\"1\", \"([0-9]\")", "extract(\"1\", \"([0-9]\")"] {
+                assert!(
+                    Isolate::new().run_standard(expression).is_err(),
+                    "{expression} did not fail"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn a_pattern_is_compiled_once_per_thread() {
+        let first = cached_regex("^cache-once-[0-9]+$").unwrap();
+        let second = cached_regex("^cache-once-[0-9]+$").unwrap();
+        assert!(Rc::ptr_eq(&first, &second));
+    }
+
+    #[test]
+    fn a_full_cache_is_cleared_and_keeps_answering() {
+        let first = cached_regex("^full-0$").unwrap();
+        for i in 1..=REGEX_CACHE_CAPACITY {
+            let pattern = format!("^full-{i}$");
+            assert!(cached_regex(&pattern)
+                .unwrap()
+                .is_match(&pattern[1..pattern.len() - 1]));
+        }
+        // The cache filled up and was cleared, so the first pattern is compiled afresh.
+        let again = cached_regex("^full-0$").unwrap();
+        assert!(!Rc::ptr_eq(&first, &again));
+        assert!(again.is_match("full-0"));
+        assert_eq!(
+            run("matches(input, pattern)", "full-7", "^full-7$"),
+            Some(json!(true))
+        );
     }
 }
