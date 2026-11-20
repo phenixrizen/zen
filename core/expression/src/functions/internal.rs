@@ -330,6 +330,7 @@ pub(crate) mod imp {
     use crate::{Variable as V, Variable};
     use anyhow::{anyhow, Context};
     use chrono_tz::Tz;
+    use hashlink::LruCache;
     #[cfg(not(feature = "regex-lite"))]
     use regex::Regex;
     #[cfg(feature = "regex-lite")]
@@ -337,9 +338,47 @@ pub(crate) mod imp {
     use rust_decimal::prelude::{FromPrimitive, ToPrimitive};
     use rust_decimal::{Decimal, RoundingStrategy};
     use rust_decimal_macros::dec;
+    use std::cell::RefCell;
     use std::collections::BTreeMap;
     use std::rc::Rc;
     use std::str::FromStr;
+
+    /// How many compiled patterns each thread keeps. Past it, the least recently used is dropped.
+    pub(crate) const REGEX_CACHE_CAPACITY: usize = 32;
+
+    /// Compiled patterns, with least-recently-used eviction. One per thread: a lookup takes no
+    /// lock, and a thread's patterns are freed when it exits.
+    pub(crate) struct RegexCache(RefCell<LruCache<Box<str>, Rc<Regex>>>);
+
+    impl RegexCache {
+        pub(crate) fn new(capacity: usize) -> Self {
+            Self(RefCell::new(LruCache::new(capacity)))
+        }
+
+        /// The compiled form of `pattern`, compiled on its first use and kept after. An invalid
+        /// pattern is not kept, so it fails on every call.
+        pub(crate) fn get(&self, pattern: &str) -> anyhow::Result<Rc<Regex>> {
+            if let Some(regex) = self.0.borrow_mut().get(pattern) {
+                return Ok(regex.clone());
+            }
+
+            let regex = Rc::new(Regex::new(pattern).context("Invalid regular expression")?);
+            self.0.borrow_mut().insert(pattern.into(), regex.clone());
+
+            Ok(regex)
+        }
+    }
+
+    thread_local!(static REGEX_CACHE: RegexCache = RegexCache::new(REGEX_CACHE_CAPACITY));
+
+    /// The compiled form of `pattern`, from this thread's cache.
+    ///
+    /// `matches` and `extract` call this instead of compiling their pattern on every call. The
+    /// result is the same, since a pattern always compiles to the same regex; only when it is
+    /// compiled changes.
+    pub(crate) fn cached_regex(pattern: &str) -> anyhow::Result<Rc<Regex>> {
+        REGEX_CACHE.with(|cache| cache.get(pattern))
+    }
 
     fn __internal_number_array(args: &Arguments, pos: usize) -> anyhow::Result<Vec<Decimal>> {
         let a = args.array(pos)?;
@@ -402,7 +441,7 @@ pub(crate) mod imp {
         let a = args.str(0)?;
         let b = args.str(1)?;
 
-        let regex = Regex::new(b.as_ref()).context("Invalid regular expression")?;
+        let regex = cached_regex(b.as_ref())?;
 
         Ok(V::Bool(regex.is_match(a.as_ref())))
     }
@@ -426,7 +465,7 @@ pub(crate) mod imp {
         let a = args.str(0)?;
         let b = args.str(1)?;
 
-        let regex = Regex::new(b.as_ref()).context("Invalid regular expression")?;
+        let regex = cached_regex(b.as_ref())?;
 
         let captures = regex
             .captures(a.as_ref())
@@ -917,5 +956,143 @@ pub(crate) mod imp {
         };
 
         Ok(V::Dynamic(Rc::new(date_time)))
+    }
+}
+
+#[cfg(test)]
+mod regex_cache_tests {
+    use super::imp::{cached_regex, RegexCache, REGEX_CACHE_CAPACITY};
+    use crate::{Isolate, Variable};
+    #[cfg(not(feature = "regex-lite"))]
+    use regex::Regex;
+    #[cfg(feature = "regex-lite")]
+    use regex_lite::Regex;
+    use serde_json::{json, Value};
+    use std::rc::Rc;
+    use std::thread;
+
+    /// Patterns and inputs covering anchors, capture groups, optional groups that do not take
+    /// part, case-insensitive and Unicode classes, and empty matches.
+    const CASES: &[(&str, &str)] = &[
+        ("^[0-9]+$", "99213"),
+        ("^[0-9]+$", "A0425"),
+        ("^[0-9]+$", ""),
+        ("^0*(42.)$", "0420"),
+        ("^0*(.*)$", "000"),
+        ("^(.*?)s*$", "months"),
+        ("^([A-Z]*)([0-9]+)([A-Z]*)$", "A0425"),
+        ("^([A-Z]*)([0-9]+)([A-Z]*)$", "A-1"),
+        ("^(A)?(B)$", "B"),
+        ("(?i)^[ s]*day[ s]*$", " DAYS "),
+        ("^\\p{L}", "é1234"),
+        ("(?s)^.{4}[MU]", "abc\nM"),
+        ("(\\d{4})-(\\d{2})-(\\d{2})", "on 2022-09-18"),
+        ("", "anything"),
+    ];
+
+    /// The expression's answer, or `None` where it fails.
+    fn run(expression: &str, input: &str, pattern: &str) -> Option<Value> {
+        let env = Variable::from(json!({ "input": input, "pattern": pattern }));
+        Isolate::with_environment(env)
+            .run_standard(expression)
+            .ok()
+            .map(|v| v.to_value())
+    }
+
+    /// What `matches` and `extract` gave before the cache: a pattern compiled for the call, or
+    /// `None` for both where the pattern does not compile (`regex-lite` has no `\p{L}`).
+    fn uncached(pattern: &str, input: &str) -> (Option<Value>, Option<Value>) {
+        let Ok(regex) = Regex::new(pattern) else {
+            return (None, None);
+        };
+        let captures: Vec<&str> = regex
+            .captures(input)
+            .map(|c| c.iter().flatten().map(|m| m.as_str()).collect())
+            .unwrap_or_default();
+        (Some(json!(regex.is_match(input))), Some(json!(captures)))
+    }
+
+    #[test]
+    fn matches_and_extract_answer_as_without_the_cache() {
+        for (pattern, input) in CASES {
+            let (is_match, captures) = uncached(pattern, input);
+            // The first call compiles the pattern, the second finds it in the cache.
+            for _ in 0..2 {
+                assert_eq!(
+                    run("matches(input, pattern)", input, pattern),
+                    is_match,
+                    "matches({input:?}, {pattern:?})"
+                );
+                assert_eq!(
+                    run("extract(input, pattern)", input, pattern),
+                    captures,
+                    "extract({input:?}, {pattern:?})"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn an_invalid_pattern_fails_on_every_call() {
+        for _ in 0..3 {
+            let error = cached_regex("([0-9]").unwrap_err();
+            assert_eq!(error.to_string(), "Invalid regular expression");
+            for expression in ["matches(\"1\", \"([0-9]\")", "extract(\"1\", \"([0-9]\")"] {
+                assert!(
+                    Isolate::new().run_standard(expression).is_err(),
+                    "{expression} did not fail"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn a_pattern_is_compiled_once() {
+        let cache = RegexCache::new(4);
+        let first = cache.get("^once-[0-9]+$").unwrap();
+        let second = cache.get("^once-[0-9]+$").unwrap();
+        assert!(Rc::ptr_eq(&first, &second));
+    }
+
+    #[test]
+    fn a_recently_used_pattern_survives_eviction_and_the_least_recently_used_does_not() {
+        let cache = RegexCache::new(2);
+        let a = cache.get("^a$").unwrap();
+        let b = cache.get("^b$").unwrap();
+        // Using `a` makes `b` the least recently used, so `c` evicts `b`.
+        assert!(Rc::ptr_eq(&a, &cache.get("^a$").unwrap()));
+        cache.get("^c$").unwrap();
+
+        assert!(Rc::ptr_eq(&a, &cache.get("^a$").unwrap()), "a was evicted");
+        let b_again = cache.get("^b$").unwrap();
+        assert!(!Rc::ptr_eq(&b, &b_again), "b was not evicted");
+        assert!(b_again.is_match("b"));
+    }
+
+    #[test]
+    fn a_thread_keeps_at_most_the_capacity() {
+        // Each test runs on a thread of its own, so this thread's cache starts empty.
+        let first = cached_regex("^capacity-0$").unwrap();
+        for i in 1..REGEX_CACHE_CAPACITY {
+            cached_regex(&format!("^capacity-{i}$")).unwrap();
+        }
+        // The cache is full, and `first` is still in it.
+        assert!(Rc::ptr_eq(&first, &cached_regex("^capacity-0$").unwrap()));
+
+        // One more pattern evicts the least recently used, `^capacity-1$`, not `first`.
+        let second = cached_regex("^capacity-1$").unwrap();
+        cached_regex("^capacity-extra$").unwrap();
+        assert!(Rc::ptr_eq(&first, &cached_regex("^capacity-0$").unwrap()));
+        assert!(Rc::ptr_eq(&second, &cached_regex("^capacity-1$").unwrap()));
+    }
+
+    #[test]
+    fn each_thread_compiles_its_own() {
+        let address = |regex: Rc<Regex>| Rc::as_ptr(&regex) as usize;
+        let here = address(cached_regex("^per-thread$").unwrap());
+        let there = thread::spawn(move || address(cached_regex("^per-thread$").unwrap()))
+            .join()
+            .unwrap();
+        assert_ne!(here, there);
     }
 }
